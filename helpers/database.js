@@ -1,4 +1,4 @@
-const info = require('../config.template');
+const info = require('../configTemplate');
 const pgp = require('pg-promise')();
 
 const cn = process.env.DATABASE_URL || info.config;
