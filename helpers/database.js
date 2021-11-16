@@ -2,7 +2,12 @@
 const pgp = require('pg-promise')();
 
 //const cn = process.env.DATABASE_URL || info.config;
-const db = pgp(process.env.DATABASE_URL+'?ssl=true');
+const db = pgp({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
 
 exports.run_query = async function run_query(query, values) {
   let res;
