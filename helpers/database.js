@@ -1,8 +1,8 @@
-const info = require('../configTemplate');
+//const info = require('../config');
 const pgp = require('pg-promise')();
 
-const cn = process.env.DATABASE_URL || info.config;
-const db = pgp(cn);
+//const cn = process.env.DATABASE_URL || info.config;
+const db = pgp(process.env.DATABASE_URL+'?ssl=true');
 
 exports.run_query = async function run_query(query, values) {
   let res;
