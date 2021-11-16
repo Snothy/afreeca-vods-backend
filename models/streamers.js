@@ -256,7 +256,6 @@ exports.removeStreamer = async function (bj_id) {
     //remove vods_data, remove vods, remove bj
     let query, data, vodsData, id, title_num
     data = await modelVods.getStreamerVods(bj_id);
-    console.log(data);
     for(let i=0; i<data.length; i++) {
 
         //remove vods_data
