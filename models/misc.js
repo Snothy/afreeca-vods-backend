@@ -110,7 +110,7 @@ createNewVodLinkV2 = async (cookie, stationNum, bbsNum, titleNum) => {
         });
         body = await res.text();
         //console.log(body);
-        writeLogsToFile(body);
+        //writeLogsToFile(body);
     }
     catch(err) {
         console.log(err);
@@ -142,8 +142,6 @@ createNewVodLinkV2 = async (cookie, stationNum, bbsNum, titleNum) => {
     var date_reg = body.indexOf('reg_date');
     date_reg = body.slice(date_reg+9, date_reg+19);
     */
-
-    const title = 'TestTitle';
 
     const vodObject = {data:vodData, station_num: stationNum, bbs_num: bbsNum, title_num: titleNum};
     const vodObjectMerged = {...vodObject, ...extraData}; //+views and duration

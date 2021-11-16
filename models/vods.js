@@ -10,11 +10,11 @@ var _this = this;
 
 exports.saveVod =  async function saveVod (vod, vodData) {
     var query, data1, data2;
-    query = 'INSERT INTO vods SET ?;';
-    data1 = await db.run_query(query, vod); //get vod id from return data
+    query = 'INSERT INTO vods VALUES(${title_num}, ${bj_id}, ${thumbnail}, ${date_released}, ${title}, ${station_num}, ${bbs_num}, ${views}, ${duration}) RETURNING title_num;';
+    data1 = await db.run_query_insert(query, vod); //get vod id from return data
 
     const vod_title_num = vod.title_num;
-    query = 'INSERT INTO vods_data(vod_link, vod_title_num) VALUES (?, ?);'
+    query = 'INSERT INTO vods_data(vod_link, vod_title_num) VALUES ($1, $2);'
     for (let i=0; i<vodData.length; i++) {
         data2 = await db.run_query(query, [vodData[i], vod_title_num]);
     }
@@ -23,16 +23,16 @@ exports.saveVod =  async function saveVod (vod, vodData) {
 }
 
 exports.getVodData =  async function getVodData (vod_title_num) {
-    const query = 'SELECT * FROM vods_data WHERE vod_title_num = ?;';
-    const data = await db.run_query(query, vod_title_num);
+    const query = 'SELECT * FROM vods_data WHERE vod_title_num = $1;';
+    const data = await db.run_query(query, [vod_title_num]);
 
     return data;
 }
 
 
 exports.getStreamerVods =  async function getStreamerVods (bj_id) {
-    const query = 'SELECT * FROM vods WHERE bj_id = ?;';
-    const data = await db.run_query(query, bj_id);
+    const query = 'SELECT * FROM vods WHERE bj_id = $1;';
+    const data = await db.run_query(query, [bj_id]);
     //console.log(data);
     return data;
 }
@@ -85,7 +85,7 @@ exports.fetchNewVod = async function fetchNewVod (bj_id, cookie) {
     }
 
     const vodUrlV2 = await misc.createNewVodLinkV2(cookie, stationNum, bbsNum, titleNum); //get title, reg_date
-    writeVodsToFile(bj_id, thumbnailUrl, 'vodUrl', vodUrlV2.data); //vodUrl (backup url just slows down the program, might add later)
+    //writeVodsToFile(bj_id, thumbnailUrl, 'vodUrl', vodUrlV2.data); //vodUrl (backup url just slows down the program, might add later)
     //console.log(vodUrlV2);
 
     //const vodUrl = misc.createNewVodLink(thumbnailUrl); //old version (backup url)
@@ -142,7 +142,7 @@ exports.fetchXVodsR = async function fetchXVodsR (bj_id, num_of_vods, cookie) {
             continue;
         }
 
-        writeVodsToFile(bj_id, thumbnailUrl, 'vodUrl', vodUrlV2.data); //vodUrl (backup url just slows down the program, might add later)
+        //writeVodsToFile(bj_id, thumbnailUrl, 'vodUrl', vodUrlV2.data); //vodUrl (backup url just slows down the program, might add later)
 
         const{data, ...vod} = vodUrlV2; //omit the data object
         vod.bj_id = bj_id;
@@ -156,7 +156,7 @@ exports.fetchXVodsR = async function fetchXVodsR (bj_id, num_of_vods, cookie) {
         }
         
         //if duplicate entry, don't add to list
-        if(saveVod.affectedRows === 1){
+        if(saveVod){
             vods.push(vod);
         } else {
             continue
@@ -253,7 +253,7 @@ exports.fetchXVods = async function fetchXVods (bj_id, num_of_vods, cookie) {
         }
 
         //if duplicate entry, don't add to list 
-        if(saveVod.affectedRows === 1){
+        if(saveVod){
             vods.push(vod);
         } else {
             continue

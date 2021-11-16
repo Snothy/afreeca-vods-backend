@@ -15,7 +15,8 @@ app.use(cors(options));
 app.use(streamers.routes());
 //app.use(vods.routes());
 
-const port = 3001;
+const port = process.env.PORT || 3002;
+
 app.listen(port, () => {
     console.log(`app listening at http://localhost:${port}`)
 });

@@ -1,21 +1,34 @@
-const mysql = require('promise-mysql');
 const info = require('../config');
+const pgp = require('pg-promise')();
 
-/**
- * Run an SQL query on the Database.
- * @param {string} query - The SQL query string
- * @param {string} values - The values that replace the placeholders in the query
- * @returns {object} - The mysql response object - either data we can index or information about the executed query
- * @throws {error} - Error from the mysql library representing what went wrong with the query execution
- */
-exports.run_query = async function run_query (query, values) {
-    try {
-        const connection = await mysql.createConnection(info.config);
-        const data = await connection.query(query, values);
-        await connection.end();
-        return data;
-    } catch (error) {
-        console.error(error, query, values);
-        throw error;
-    }
-};
+const cn = process.env.DATABASE_URL || info.config;
+const db = pgp(cn);
+
+exports.run_query = async function run_query(query, values) {
+  let res;
+  try {
+    res = await db.any(query, values);
+    return res;
+  } catch(err) {
+    console.error(err);
+  }
+}
+
+exports.run_query_insert = async function run_query_insert(query, values) {
+  let res;
+  try {
+    res = await db.one(query, values);
+    return res;
+  } catch(err) {
+    console.error(err);
+  }
+}
+
+exports.run_query_remove = async function run_query_remove(query, values) {
+  try {
+    const {rowCount} = await db.result(query, values);
+    return rowCount;
+  } catch(err) {
+    console.error(err);
+  }
+}

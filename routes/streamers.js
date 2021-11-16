@@ -49,16 +49,19 @@ async function removeStreamer (ctx) {
     //console.log(id);
 
     const result = await modelStreamers.removeStreamer(id);
-    if(result.affectedRows) {
+    if(result > 0) {
         ctx.status = 200;
         ctx.body = {removed: true};
+    } else {
+      ctx.status = 400;
+      ctx.body = {removed: false};
     }
 }
 
 async function addStreamer (ctx) {
     const bj_id = ctx.request.body.bj_id;
     const result = await modelStreamers.addStreamer(bj_id);
-    if (result.affectedRows) {
+    if (result) {
         ctx.status = 201;
         ctx.body = {created: true};
     }
@@ -114,8 +117,7 @@ async function fetchXVods (ctx) {
     const id = ctx.params.id;
     const cookie = ctx.request.body.cookie;
 
-    const result = await modelVods.fetchXVods(id, 40, cookie); 
-    
+    const result = await modelVods.fetchXVods(id, 5, cookie); 
     if(result.length) {
         return ctx.body = result; 
     } 

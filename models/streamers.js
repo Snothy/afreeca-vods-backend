@@ -9,8 +9,8 @@ const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch
 var _this = this;
 
 exports.getById = async function getById (bj_id) {
-    const query = 'SELECT * FROM streamers WHERE id = ?;';
-    const data = await db.run_query(query, bj_id);
+    const query = 'SELECT * FROM streamers WHERE id = $1;';
+    const data = await db.run_query(query, [bj_id]);
     
     return data;
 }
@@ -46,9 +46,10 @@ exports.getAll = async function getAll() {
 }
 
 exports.updateStreamer = async function updateStreamer(bj) {
-    const query = 'UPDATE streamers SET ? WHERE ID = ?;';
-    const values = [bj, bj.id];
-    const data = await db.run_query(query, values);
+    //console.log(bj);
+    //${nick}, ${avatar_url}, ${is_live}, ${last_live}
+    const query = 'UPDATE streamers SET nick = ${nick}, avatar_url = ${avatar_url}, is_live = ${is_live}, last_live = ${last_live}  WHERE ID = ${id} RETURNING id;';
+    const data = await db.run_query_insert(query, bj);
     return data;
 }
 
@@ -211,7 +212,6 @@ exports.refreshAllFast = async function refreshAllFast() {
             })
         })
     );
-    
 
     for(let i=0; i<data.length; i++) {
         info = liveList[i].CHANNEL.BROAD_INFOS[0].list[0]; //stream data
@@ -242,11 +242,12 @@ exports.addStreamer = async function addStreamer(bj_id) {
 
     //fetch for avatar, recent stream, islive default = 0, 
     const bjData = await _this.getData(bj_id); //avatar, last_live
-    const bj = {id: bj_id, avatar_url: bjData.avatar, is_live: 0, last_live: bjData.last_live, nick: bjData.nick};
+    const bj = {id: bj_id, nick: bjData.nick, avatar_url: bjData.avatar, is_live: false, last_live: bjData.last_live};
+    //const bj = [bj_id, bjData.nick, bjData.avatar, false, bjData.last_live];
 
     //need bj object
-    const query = 'INSERT INTO streamers SET ?;';
-    const data = await db.run_query(query, bj);
+    const query = 'INSERT INTO streamers VALUES(${id}, ${nick}, ${avatar_url}, ${is_live}, ${last_live}) RETURNING id;';
+    const data = await db.run_query_insert(query, bj);
     //console.log(data.insertId);
     return data;
 }
@@ -255,22 +256,22 @@ exports.removeStreamer = async function (bj_id) {
     //remove vods_data, remove vods, remove bj
     let query, data, vodsData, id, title_num
     data = await modelVods.getStreamerVods(bj_id);
-    //console.log(data);
+    console.log(data);
     for(let i=0; i<data.length; i++) {
 
         //remove vods_data
         title_num = data[i].title_num;
         //console.log(title_num);
-        query = 'DELETE FROM vods_data WHERE vod_title_num = ?;';
-        await db.run_query(query, title_num);
+        query = 'DELETE FROM vods_data WHERE vod_title_num = $1;';
+        await db.run_query(query, [title_num]);
 
         //remove vod
-        query = 'DELETE FROM vods WHERE title_num = ?;';
-        await db.run_query(query, title_num);
+        query = 'DELETE FROM vods WHERE title_num = $1;';
+        await db.run_query(query, [title_num]);
     }
     //remove streamer
-    query = 'DELETE FROM streamers WHERE id = ?';
-    data = await db.run_query(query, bj_id);
+    query = 'DELETE FROM streamers WHERE id = $1';
+    data = await db.run_query_remove(query, [bj_id]);
     
     return data;
 }
