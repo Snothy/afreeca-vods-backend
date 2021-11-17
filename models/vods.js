@@ -51,6 +51,11 @@ exports.fetchNewVod = async function fetchNewVod (bj_id, cookie) {
     while(!newVod) {
         await misc.delay(1500) //wait a second or two to not spam too many requests to the server
 
+        //keep server alive (falls asleep after 30min on heroku) every 100 
+        if(counter%100 === 0) {
+          fetch(process.env.backend_url+'streamers');
+        }
+
         var res, body
         try {
             res = await fetch(URL);
