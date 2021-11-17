@@ -91,7 +91,11 @@ exports.getData = async function getData(bj_id) {
         var bits = last_stream.split(/\D/);
         last_stream = new Date(bits[0], --bits[1], bits[2], bits[3], bits[4]);
         //console.log(last_stream);
-        last_stream.setTime( last_stream.getTime() + last_stream.getTimezoneOffset()*460*1000 );
+
+
+        //last_stream.setTime( last_stream.getTime() + last_stream.getTimezoneOffset()*460*1000 );
+
+
         //const a = last_stream.toLocaleString()
         //console.log(a);
         //last_stream.setTime( last_stream.getTime() + last_stream.getTimezoneOffset()*90*1000 );
@@ -224,7 +228,7 @@ exports.refreshAllFast = async function refreshAllFast() {
         const nick = last_streamList[i].DATA.user_nick;
         var bits = last_stream.split(/\D/);
         last_stream = new Date(bits[0], --bits[1], bits[2], bits[3], bits[4]);
-        last_stream.setTime( last_stream.getTime() + last_stream.getTimezoneOffset()*460*1000 );
+        //last_stream.setTime( last_stream.getTime() + last_stream.getTimezoneOffset()*460*1000 );
 
         data[i].is_live = isLive;
         data[i].last_live = last_stream;
