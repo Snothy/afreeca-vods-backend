@@ -39,7 +39,7 @@ exports.getUsernameById = async function getUsernameById (bj_id) {
 }
 */
 exports.getAll = async function getAll() {
-    const query = 'SELECT * FROM streamers;';
+    const query = 'SELECT * FROM streamers ORDER BY id ASC;';
     const data = await db.run_query(query);
 
     return data;
@@ -48,7 +48,7 @@ exports.getAll = async function getAll() {
 exports.updateStreamer = async function updateStreamer(bj) {
     //console.log(bj);
     //${nick}, ${avatar_url}, ${is_live}, ${last_live}
-    const query = 'UPDATE streamers SET nick = ${nick}, avatar_url = ${avatar_url}, is_live = ${is_live}, last_live = ${last_live}  WHERE ID = ${id} RETURNING id;';
+    const query = 'UPDATE streamers SET nick = ${nick}, avatar_url = ${avatar_url}, is_live = ${is_live}, last_live = ${last_live}  WHERE ID = ${id} RETURNING nick;';
     const data = await db.run_query_insert(query, bj);
     return data;
 }
@@ -91,10 +91,10 @@ exports.getData = async function getData(bj_id) {
         var bits = last_stream.split(/\D/);
         last_stream = new Date(bits[0], --bits[1], bits[2], bits[3], bits[4]);
         //console.log(last_stream);
-        last_stream.setTime( last_stream.getTime() + last_stream.getTimezoneOffset()*120*1000 );
+        last_stream.setTime( last_stream.getTime() + last_stream.getTimezoneOffset()*210*1000 );
         //const a = last_stream.toLocaleString()
         //console.log(a);
-        //last_stream.setTime( last_stream.getTime() + last_stream.getTimezoneOffset()*60*1000 );
+        //last_stream.setTime( last_stream.getTime() + last_stream.getTimezoneOffset()*90*1000 );
         //last_stream = misc.convertTimezone(last_stream, 'EET')
 
     } catch(err) {
@@ -224,15 +224,16 @@ exports.refreshAllFast = async function refreshAllFast() {
         const nick = last_streamList[i].DATA.user_nick;
         var bits = last_stream.split(/\D/);
         last_stream = new Date(bits[0], --bits[1], bits[2], bits[3], bits[4]);
-        last_stream.setTime( last_stream.getTime() + last_stream.getTimezoneOffset()*120*1000 );
+        last_stream.setTime( last_stream.getTime() + last_stream.getTimezoneOffset()*210*1000 );
 
         data[i].is_live = isLive;
         data[i].last_live = last_stream;
         data[i].nick = nick;
         _this.updateStreamer(data[i]);
     }
+    const fetching = await _this.getAllFetching();
 
-    return data;
+    return {streamers: data, fetching: fetching};
     
 }
 
@@ -248,7 +249,10 @@ exports.addStreamer = async function addStreamer(bj_id) {
     //need bj object
     const query = 'INSERT INTO streamers VALUES(${id}, ${nick}, ${avatar_url}, ${is_live}, ${last_live}) RETURNING id;';
     const data = await db.run_query_insert(query, bj);
-    //console.log(data.insertId);
+    
+    //set fetching
+    await _this.addFetching(bj_id);
+
     return data;
 }
 
@@ -268,12 +272,67 @@ exports.removeStreamer = async function (bj_id) {
         query = 'DELETE FROM vods WHERE title_num = $1;';
         await db.run_query(query, [title_num]);
     }
+    //remove fetching
+    await _this.removeFetching(bj_id);
     //remove streamer
     query = 'DELETE FROM streamers WHERE id = $1';
     data = await db.run_query_remove(query, [bj_id]);
     
     return data;
 }
+
+exports.getAllFetching = async function getAllFetching() {
+  const query = 'SELECT * FROM fetching ORDER BY bj_id ASC;';
+  const data = await db.run_query(query);
+  return data;
+}
+
+exports.getFetching = async function getFetching(bj_id) {
+  const query = 'SELECT * FROM fetching WHERE bj_id = $1;';
+  const data = await db.run_query(query, [bj_id]);
+  return data[0].fetching;
+}
+
+exports.addFetching = async function addFetching(bj_id) {
+  const query = 'INSERT INTO fetching VALUES($1, $2) RETURNING bj_id;';
+  const data = await db.run_query_insert(query, [bj_id, false]);
+  return data;
+}
+
+exports.removeFetching = async function removeFetching(bj_id) {
+  const query = 'DELETE FROM fetching WHERE bj_id = $1';
+  const data = await db.run_query_remove(query, [bj_id]);
+  return data;
+}
+
+exports.initFetching = async function initFetching() {
+  //when the api starts, set all fetching to false
+  const streamers = await _this.getAll();
+  for(let i=0; i<streamers.length; i++) {
+    const query = 'UPDATE fetching SET fetching=$1 WHERE bj_id=$2;';
+    const values = [false, streamers[i].id,];
+    await db.run_query(query, values);
+  }
+}
+
+exports.updateFetching = async function updateFetching(bj_id, fetchingBool) {
+  const query = 'UPDATE fetching SET fetching=$1 WHERE bj_id=$2 RETURNING bj_id;';
+  const values = [fetchingBool, bj_id];
+  const result = await db.run_query_insert(query, values);
+  return result;
+}
+
+/*
+exports.oneTimeUse = async function oneTimeUse() {
+  //populate new table
+  const streamers = await _this.getAll();
+  for(let i=0; i<streamers.length; i++) {
+    const query = 'INSERT INTO fetching VALUES($1, $2);';
+    values = [streamers[i].id, false];
+    await db.run_query(query, values);
+  }
+}
+*/
 
 exports.parseCookies = function parseCookies(str) {
     let rx = RegExp("/([^;=\s]*)=([^;]*)/g");

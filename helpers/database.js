@@ -1,7 +1,7 @@
 //const info = require('../config');
 const pgp = require('pg-promise')();
 
-//const cn = process.env.DATABASE_URL || info.config;
+//const db = pgp(info.config);
 const db = pgp({
   connectionString: process.env.DATABASE_URL,
   ssl: {
@@ -25,7 +25,11 @@ exports.run_query_insert = async function run_query_insert(query, values) {
     res = await db.one(query, values);
     return res;
   } catch(err) {
-    console.error(err);
+    if(err.code == 23505) {
+      //do nothing, just unable to add duplicate primary key value 
+    } else {
+      console.log(err);
+    }
   }
 }
 
