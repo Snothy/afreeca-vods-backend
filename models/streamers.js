@@ -154,6 +154,127 @@ exports.isLive =  async function isLive (bj_id) {
     }
 }
 
+exports.getLive = async function getAll(bj_id, cookie) {
+  let BNO, TITLE, AID, LIVEURL, CODE, CHAT, AUTH, FTK, CHATNO;//, PLAYLIST;
+  let url = `https://live.afreecatv.com/afreeca/player_live_api.php?bjid=${bj_id}`;
+  //get BNO(livestream id) and TITLE
+  try {
+    let res = await fetch( url, {
+        method: 'POST',
+        body: new URLSearchParams({
+          "bid": bj_id,
+          "type": "live",
+          "quality": "original",
+          "player_type": "html5",
+          "mode": "landing",
+
+        }),
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Cookie": cookie
+        }
+    });
+    let body = await res.json();
+    BNO = body.CHANNEL.BNO;
+    TITLE = body.CHANNEL.TITLE;
+    CODE = body.CHANNEL.RESULT;
+    FTK = body.CHANNEL.FTK;
+    CHATNO = body.CHANNEL.CHATNO;
+    if(cookie !== "" ) {
+      AUTH = body.CHANNEL.TK;
+    } else {
+      AUTH = ""
+    }
+    //console.log(body);
+    const port = parseInt(body.CHANNEL.CHPT) + 1;
+    CHAT = "wss://" + body.CHANNEL.CHDOMAIN + ":" + port +`/Websocket/${bj_id}`;
+  } catch (err) {
+      console.error(err);
+  }
+
+  //get AID (unique identifier for the livestream m3u8 playlist on their servers)
+  try {
+    let res = await fetch( url, {
+        method: 'POST',
+        body: new URLSearchParams({
+          "bid": bj_id,
+          "bno": BNO,
+          "type": "aid",
+          "pwd": "",
+          "player_type": "html5",
+          "stream_type": "common",
+          "quality": "original",
+          "mode": "landing",
+          "from_api": 0
+
+        }),
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Cookie": cookie
+        }
+    });
+    let body = await res.json();
+    AID = body.CHANNEL.AID;
+    //console.log(info);
+  } catch (err) {
+      console.error(err);
+  }
+
+  if(CODE !== 1) {
+    return {live_url: "", title: TITLE, code: CODE}
+  }
+  //Get the server url in which the playlist is stored
+  url = `https://livestream-manager.afreecatv.com/broad_stream_assign.html?return_type=gcp_cdn&broad_key=${BNO}-common-original-hls&use_cors=true&cors_origin_url=play.afreecatv.com`
+  try {
+    let res = await fetch( url, {
+        method: 'GET',
+        headers: {
+          "Cookie": cookie
+        }
+    });
+    let body = await res.json();
+    LIVEURL = body.view_url;
+    //console.log(info);
+  } catch (err) {
+      console.error(err);
+  }
+  const result = LIVEURL + "?aid=" + AID;
+  //Fetch 3 times to avoid the "pre_loading" segments, which seem to prevent
+  //the player from loading further .TS (video) segments
+  
+  for(let i=0; i<3; i++) {
+    try {
+      await fetch( result, {
+          method: 'GET',
+          headers: {
+          }
+      });
+    } catch (err) {
+        console.error(err);
+    }
+  }
+  
+  return {live_url: result, title: TITLE, bno: BNO, code: CODE, chat: CHAT, auth: AUTH, ftk: FTK, chatno: CHATNO};//, playlist: PLAYLIST};
+}
+
+exports.getBrowse = async function getBrowse(page) {
+  let result;
+  const url = `https://live.afreecatv.com/api/main_broad_list_api.php?selectType=action&selectValue=all&orderType=view_cnt&pageNo=${page}&lang=en_US`;
+  try {
+    let res = await fetch( url, {
+        method: 'GET',
+        headers: {
+          
+        }
+    });
+    result = await res.json();
+    result = result.broad;
+  } catch (err) {
+      console.error(err);
+  }
+  return result;
+}
+
 exports.refreshAll = async function refreshAll() {
     const data = await _this.getAll();
     //console.log(data);
@@ -234,6 +355,14 @@ exports.refreshAllFast = async function refreshAllFast() {
         data[i].last_live = last_stream;
         data[i].nick = nick;
         _this.updateStreamer(data[i]);
+        
+        //get live information
+        if(data[i].is_live) {
+          data[i].bno = info.nBroadNo;
+          data[i].title = info.szBroadTitle;
+          data[i].streamImg = info.szThumImg;
+          data[i].views = info.nCurrentView;
+        }
     }
     const fetching = await _this.getAllFetching();
 

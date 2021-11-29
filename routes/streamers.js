@@ -7,6 +7,8 @@ const router = Router({ prefix: '/api/streamers' });
 
 router.get('/', getAll);
 router.post('/', bodyparser(), addStreamer);
+router.post('/browse', bodyparser(), getBrowse);
+
 router.post('/a/login', bodyparser(), login);
 
 router.get('/:id([a-zA-Z0-9]{1,})', getById); 
@@ -15,6 +17,8 @@ router.del('/:id([a-zA-Z0-9]{1,})', removeStreamer);
 router.get('/:id([a-zA-Z0-9]{1,})/vods', getStreamerVods);
 router.post('/:id([a-zA-Z0-9]{1,})/fetchVods', bodyparser(), fetchXVods);
 router.get('/:id([a-zA-Z0-9]{1,})/:vodId([0-9]{1,})', getVodData);
+router.post('/:id([a-zA-Z0-9]{1,})/live', bodyparser(), getLive);
+
 
 router.get('/refresh/all', refreshAll);
 router.get('/refresh/all/fast', refreshAllFast);
@@ -131,6 +135,27 @@ async function getVodData (ctx) {
           ctx.status = 404;
         }
     }
+}
+
+async function getLive (ctx) {
+  const id = ctx.params.id;
+  const cookie = ctx.request.body.cookie;
+
+  const result = await modelStreamers.getLive(id, cookie);
+  if(result) {
+    return ctx.body = result;
+  }
+}
+
+async function getBrowse(ctx) {
+  const page = ctx.request.body.page;
+
+  const result = await modelStreamers.getBrowse(page);
+  if(result.length > 0) {
+    return ctx.body = result;
+  } else {
+    return ctx.status = 404;
+  }
 }
 
 async function refreshAll (ctx) {
