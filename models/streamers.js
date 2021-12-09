@@ -102,7 +102,6 @@ exports.getData = async function getData (bj_id) {
 };
 
 exports.isLive = async function isLive (bj_id) {
-  const bj = await _this.getById(bj_id);
   let res, body, info;
   const liveApiUrl = 'http://live.afreeca.com/api/get_broad_state_list.php?uid=';
   try {
@@ -115,36 +114,16 @@ exports.isLive = async function isLive (bj_id) {
     });
     body = await res.json();
     info = body.CHANNEL.BROAD_INFOS[0].list[0]; // stream data
-    // console.log(info);
+    const stateValues = new Map();
+    stateValues.set(-1, false);
+    stateValues.set(1, true);
+    return stateValues.get(info.nState);
   } catch (err) {
     console.error(err);
   }
-
-  const stateValues = new Map(); // just felt like implementing a map lol
-  stateValues.set(-1, false);
-  stateValues.set(1, true);
-  const isLive = stateValues.get(info.nState);
-
-  // fetch new avatar/recent stream dates
-  const data = await _this.getData(bj_id);
-  // console.log(data);
-  bj[0].avatar_url = data.avatar;
-  bj[0].last_live = data.last_live;
-  bj[0].nick = data.nick;
-  // console.log(bj[0]);
-
-  // maybe only return isLive instead of bj?
-  if (!!bj[0].is_live !== isLive) {
-    bj[0].is_live = isLive;
-    _this.updateStreamer(bj[0]);
-    return bj;
-  } else {
-    _this.updateStreamer(bj[0]);
-    return bj;
-  }
 };
 
-exports.getLive = async function getAll (bj_id, cookie) {
+exports.getLive = async function getLive (bj_id, cookie) {
   let BNO, TITLE, AID, LIVEURL, CODE, CHAT, AUTH, FTK, CHATNO;//, PLAYLIST;
   let url = `https://live.afreecatv.com/afreeca/player_live_api.php?bjid=${bj_id}`;
   // get BNO(livestream id) and TITLE
@@ -265,18 +244,6 @@ exports.getBrowse = async function getBrowse (page) {
   return result;
 };
 
-exports.refreshAll = async function refreshAll () {
-  const data = await _this.getAll();
-  // console.log(data);
-  for (let i = 0; i < data.length; i++) {
-    const bj = await _this.isLive(data[i].id);
-    data[i] = bj[0];
-  }
-  // console.log(data);
-
-  return data;
-};
-
 exports.refreshAllFast = async function refreshAllFast () {
   // only updates whether theyre live
   const data = await _this.getAll();
@@ -336,9 +303,11 @@ exports.refreshAllFast = async function refreshAllFast () {
     const isLive = stateValues.get(info.nState);
 
     let last_stream = last_streamList[i].DATA.broad_start;
+    // console.log(last_stream);
     const nick = last_streamList[i].DATA.user_nick;
     const bits = last_stream.split(/\D/);
     last_stream = new Date(bits[0], --bits[1], bits[2], bits[3], bits[4]);
+    // console.log(last_stream);
     // last_stream.setTime( last_stream.getTime() + last_stream.getTimezoneOffset()*460*1000 );
 
     data[i].is_live = isLive;

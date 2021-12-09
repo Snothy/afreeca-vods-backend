@@ -27,7 +27,7 @@ exports.run_query_insert = async function run_query_insert (query, values) {
     res = await db.one(query, values);
     return res;
   } catch (err) {
-    if (err.code === 23505) {
+    if (err.code === '23505') {
       // do nothing, just unable to add duplicate primary key value
     } else {
       console.log(err);

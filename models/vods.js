@@ -1,8 +1,8 @@
 const db = require('../helpers/database');
 const misc = require('./misc');
 const modelStreamers = require('../models/streamers');
-const convert = require('html-to-json-data');
-const { text, number } = require('html-to-json-data/definitions');
+const { DOMParser } = require('xmldom');
+
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const _this = this;
 
@@ -29,6 +29,18 @@ exports.getVodData = async function getVodData (vod_title_num) {
   return data;
 };
 
+exports.removeVod = async function removeVod (vod_title_num) {
+  let query;
+  // remove vods_data
+  query = 'DELETE FROM vods_data WHERE vod_title_num = $1;';
+  await db.run_query_remove(query, [vod_title_num]);
+
+  // remove vod
+  query = 'DELETE FROM vods WHERE title_num = $1;';
+  const data = await db.run_query_remove(query, [vod_title_num]);
+  return data;
+};
+
 exports.getStreamerVods = async function getStreamerVods (bj_id) {
   const query = 'SELECT * FROM vods WHERE bj_id = $1;';
   const data = await db.run_query(query, [bj_id]);
@@ -39,20 +51,13 @@ exports.getStreamerVods = async function getStreamerVods (bj_id) {
 exports.fetchNewVod = async function fetchNewVod (bj_id, cookie) {
   // set fetching to true
   await modelStreamers.updateFetching(bj_id, true);
-
-  const URL = 'https://bjapi.afreecatv.com/api/' + bj_id + '/vods/all?page=1&per_page=2&orderby=reg_date';
+  const URL = `https://bjapi.afreecatv.com/api/${bj_id}/vods/all?page=1&per_page=2&orderby=reg_date`;
   let newVod = false;
   let counter = 0;
   let lastVodTitle;
-  let newVodData, titleNum, stationNum, bbsNum;
 
   while (!newVod) {
-    await misc.delay(1500); // wait a second or two to not spam too many requests to the server
-
-    // keep server alive (falls asleep after 30min on heroku) every 100
-    if (counter % 100 === 0) {
-      fetch(process.env.backend_url + 'streamers');
-    }
+    await misc.delay(1500); // Wait 1.5sec to not spam too many requests to the server
 
     let res, body;
     try {
@@ -62,8 +67,7 @@ exports.fetchNewVod = async function fetchNewVod (bj_id, cookie) {
       console.log(err);
     }
 
-    // HANDLE CASE OF NO VODS CURRENTLY AVAILABLE (body.data === [] (arr.length of 0))
-    // obtain title id of last stream (so the code knows when a new one appears)
+    // obtain title_num of last stream
     if (counter === 0 && body.data.length > 0) {
       lastVodTitle = body.data[0].title_no;
     } else if (counter === 0) {
@@ -77,130 +81,97 @@ exports.fetchNewVod = async function fetchNewVod (bj_id, cookie) {
       currLastVodTitle = '';
     }
 
+    // Compare the two title_nums, if they differ, a new vod has been found
     if (lastVodTitle !== currLastVodTitle) {
       newVod = true;
-      newVodData = body.data[0]; // latest video data
-      titleNum = newVodData.title_no; // latest video URL id
-      stationNum = newVodData.station_no;
-      bbsNum = newVodData.bbs_no;
+      _this.createVodObject(bj_id, [body.data[0]], cookie);
+      modelStreamers.updateFetching(bj_id, false);
     } else {
-      // console.log('a'); //for checking how often it makes a request
+      // Every 50 requests, perform some actions & checks
+      if (counter % 50 === 0) {
+        if (process.env.backend_url) fetch(process.env.backend_url + 'streamers'); // Keep heroku backend web dyno from sleeping
+        if (!await modelStreamers.getFetching(bj_id)) return 0; // Check if fetching === true, if not, break loop
+
+        // Check if streamer is Live, if not, set fetching to false & break loop
+        if (!await modelStreamers.isLive(bj_id)) {
+          modelStreamers.updateFetching(bj_id, false);
+          return 0;
+        }
+      }
       counter++;
     }
   }
-
-  // call function to create video link from thumbnail data
-  let thumbnailUrl = newVodData.ucc.thumb;
-  // console.log(thumbnailUrl);
-  if (thumbnailUrl === null) {
-    thumbnailUrl = '';
-  }
-
-  const vodUrlV2 = await misc.createNewVodLinkV2(cookie, stationNum, bbsNum, titleNum); // get title, reg_date
-  // writeVodsToFile(bj_id, thumbnailUrl, 'vodUrl', vodUrlV2.data); //vodUrl (backup url just slows down the program, might add later)
-  // console.log(vodUrlV2);
-
-  // const vodUrl = misc.createNewVodLink(thumbnailUrl); //old version (backup url)
-  // console.log('\n' + vodUrl);
-
-  const { data, ...vod } = vodUrlV2; // omit the data object
-  vod.bj_id = bj_id;
-  vod.thumbnail = thumbnailUrl;
-  _this.saveVod(vod, data);
-
-  // set fetching back to false
-  await modelStreamers.updateFetching(bj_id, false);
   return 1;
 };
 
 exports.fetchXVods = async function fetchXVods (bj_id, num_of_vods, cookie) {
   const URL = `https://bjapi.afreecatv.com/api/${bj_id}/vods/all?page=1&per_page=${num_of_vods}&orderby=reg_date`;
-  let titleNum, stationNum, bbsNum, res, body;
-
+  let res, body;
   try {
     res = await fetch(URL);
     body = await res.json();
   } catch (err) {
     console.log(err);
   }
-  const vods = [];
 
-  const filteredVods = body.data.filter(vod => vod.display.bbs_name === 'Replay');
-  // get all vod data
-  const vodDataList = await Promise.all(
-    filteredVods.map(vod => {
+  // Filter vods that are already in the DB
+  const streamerVods = await _this.getStreamerVods(bj_id);
+  if (streamerVods.length > 0) body.data = body.data.filter(vod => streamerVods.filter(currVod => currVod.title_num === vod.title_no.toString()).length === 0);
+  if (body.data.length === 0) return body.data;
+
+  const vods = _this.createVodObject(bj_id, body.data, cookie);
+  return vods;
+};
+
+exports.createVodObject = async function createVodObject (bj_id, vods, cookie) {
+  const result = await Promise.all(
+    vods.filter(vod => vod.display.bbs_name === 'Replay').map(vod => {
       return new Promise((resolve) => {
-        try {
-          stationNum = vod.station_no;
-          bbsNum = vod.bbs_no;
-          titleNum = vod.title_no;
-          fetch((`https://stbbs.afreecatv.com/api/video/get_video_info.php?nStationNo=${stationNum}&nBbsNo=${bbsNum}&nTitleNo=${titleNum}&adultView=ADULT_VIEW`), {
-            method: 'GET',
-            headers: {
-              cookie: cookie
-            }
-          })
-            .then(response => {
-              return new Promise(() => {
-                resolve(response.text());
-              });
+        fetch((`https://stbbs.afreecatv.com/api/video/get_video_info.php?
+        nStationNo=${vod.station_no}&nBbsNo=${vod.bbs_no}&nTitleNo=${vod.title_no}&adultView=ADULT_VIEW`), {
+          method: 'GET',
+          headers: {
+            cookie: cookie
+          }
+        })
+          .then(response => {
+            return new Promise(async () => {
+              const body = await response.text();
+              const doc = new DOMParser().parseFromString(body);
+              const fileTag = doc.documentElement.getElementsByTagName('file');
+              // If no vod files were found
+              if (fileTag[0] == null) return;
+
+              // Create array with all vod playlists available
+              const vodData = [];
+              for (let i = 0; i < fileTag.length; i++) {
+                if (fileTag[i].childNodes[0].nodeValue.includes('HIDE')) continue;
+                vodData.push(`https://vod-archive-global-cdn-z02.afreecatv.com/v101/hls/vod/${
+                  fileTag[i].childNodes[0].nodeValue.split('/').slice(7, 11).join('/')
+                }/original/both/playlist.m3u8`);
+              }
+
+              // Condense all vod data into an object
+              const vodObject = {
+                views: parseInt(doc.documentElement.getElementsByTagName('read_cnt')[0].childNodes[0].nodeValue),
+                title: doc.documentElement.getElementsByTagName('title')[0].childNodes[0].nodeValue,
+                duration: parseInt(doc.documentElement.getElementsByTagName('duration')[0].childNodes[0].nodeValue),
+                date_released: doc.documentElement.getElementsByTagName('reg_date')[0].childNodes[0].nodeValue,
+                thumbnail: vod.ucc.thumb || '',
+                bj_id: bj_id,
+                station_num: vod.station_no,
+                bbs_num: vod.bbs_no,
+                title_num: vod.title_no
+              };
+              _this.saveVod(vodObject, vodData);
+              resolve(vodObject);
             });
-        } catch (err) {
-          console.error(err);
-        }
+          })
+          .catch(err => {
+            console.log(err);
+          });
       });
     })
   );
-
-  for (let u = 0; u < vodDataList.length; u++) {
-    body = vodDataList[u];
-    const emptyArr = [];
-    const vodData = misc.searchString(body, 'vod-archive', emptyArr);
-
-    if (!vodData.length) {
-      continue;
-    }
-
-    const extraData = convert(body, {
-      views: number('read_cnt'),
-      title: text('title'),
-      duration: number('duration'),
-      date_released: text('reg_date') // file: text('file')
-    });
-
-    extraData.title = extraData.title.slice(9, -3);
-    for (let i = 0; i < vodData.length; i++) {
-      vodData[i] = `https://vod-archive-global-cdn-z02.afreecatv.com/v101/hls/vod${vodData[i]}/original/both/playlist.m3u8`;
-    }
-
-    const vodObject = { station_num: filteredVods[u].station_no, bbs_num: filteredVods[u].bbs_no, title_num: filteredVods[u].title_no };
-    const vod = { ...vodObject, ...extraData }; // +views and duration
-    // vods.push(vodObjectMerged); //return {data:[links], stationNum, bbsNum, titleNum, date_reg, title
-
-    let thumbnailUrl = filteredVods[u].ucc.thumb;
-    if (thumbnailUrl === null) {
-      // in case +19 vod and no thumbnail is available (so it doesnt crash / not save the vod)
-      thumbnailUrl = '';
-    }
-
-    vod.bj_id = bj_id;
-    vod.thumbnail = thumbnailUrl;
-
-    let saveVod;
-
-    try {
-      saveVod = await _this.saveVod(vod, vodData);
-    } catch (err) {
-      continue;
-    }
-
-    // if duplicate entry, don't add to list
-    if (saveVod) {
-      vods.push(vod);
-    } else {
-      continue;
-    }
-  }
-  // console.log(vods);
-  return vods;
+  return result;
 };

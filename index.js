@@ -4,6 +4,7 @@ const cors = require('@koa/cors');
 const modelStreamers = require('./models/streamers');
 
 const streamers = require('./routes/streamers.js');
+const vods = require('./routes/vods.js');
 
 const options = {
   origin: '*'
@@ -11,6 +12,7 @@ const options = {
 app.use(cors(options));
 
 app.use(streamers.routes());
+app.use(vods.routes());
 
 const port = process.env.PORT || 3001;
 app.listen(port, async () => {

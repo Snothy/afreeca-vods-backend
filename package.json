@@ -24,7 +24,6 @@
     "@koa/cors": "^3.1.0",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
-    "html-to-json-data": "^1.6.0",
     "koa": "^2.13.3",
     "koa-body": "^4.2.0",
     "koa-bodyparser": "^4.3.0",
@@ -33,7 +32,8 @@
     "node-fetch": "^3.0.0",
     "pg-promise": "^10.11.1",
     "promise-mysql": "^5.0.4",
-    "request": "^2.88.2"
+    "request": "^2.88.2",
+    "xmldom": "^0.6.0"
   },
   "devDependencies": {
     "concurrently": "^6.3.0",

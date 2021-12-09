@@ -14,6 +14,9 @@ module.exports = {
     camelcase: 'off',
     semi: [2, 'always'],
     'no-template-curly-in-string': 'off',
-    'no-return-assign': 'off'
+    'no-return-assign': 'off',
+    'no-async-promise-executor': 'off',
+    'prefer-promise-reject-errors': 'off',
+    'array-callback-return': 'off'
   }
 };
