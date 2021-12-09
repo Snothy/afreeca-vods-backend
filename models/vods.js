@@ -140,7 +140,10 @@ exports.createVodObject = async function createVodObject (bj_id, vods, cookie) {
               const doc = new DOMParser().parseFromString(body);
               const fileTag = doc.documentElement.getElementsByTagName('file');
               // If no vod files were found
-              if (fileTag[0] == null) return;
+              if (fileTag[0] == null) {
+                resolve(0); // Resolving with a 0, not sure how to resolve a Promise without returning anything
+                return;
+              }
 
               // Create array with all vod playlists available
               const vodData = [];
@@ -173,5 +176,5 @@ exports.createVodObject = async function createVodObject (bj_id, vods, cookie) {
       });
     })
   );
-  return result;
+  return result.filter(vod => vod !== 0);
 };

@@ -1,6 +1,7 @@
 const db = require('../helpers/database');
 const modelVods = require('../models/vods');
 const request = require('request');
+const moment = require('moment-timezone');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 // const fetch = require("node-fetch");
 const _this = this;
@@ -76,24 +77,11 @@ exports.getData = async function getData (bj_id) {
     });
     body = await res.json();
     last_stream = body.DATA.broad_start;
-
-    // Converting to last_stream datetime to GMT+2 time is a pain.
-    // cba doing the conversion for vods (misc->V2 function (reg_date variable))]
-    // would be better to get the timezone directly from the system
-    // and not manually changing the multiplier on getTimezoneOffset :))))))))
-
-    // console.log(last_stream);
-    // last_stream = new Date(Date.parse(last_stream));
-    const bits = last_stream.split(/\D/);
-    last_stream = new Date(bits[0], --bits[1], bits[2], bits[3], bits[4]);
-    // console.log(last_stream);
-
-    // last_stream.setTime( last_stream.getTime() + last_stream.getTimezoneOffset()*460*1000 );
-
-    // const a = last_stream.toLocaleString()
-    // console.log(a);
-    // last_stream.setTime( last_stream.getTime() + last_stream.getTimezoneOffset()*90*1000 );
-    // last_stream = misc.convertTimezone(last_stream, 'EET')
+    // Convert GMT+9 or Asia/Seoul AfreecaTV date to UTC
+    const format = 'YYYY-MM-DD hh:mm:ss';
+    const tz = 'Asia/Seoul';
+    const momentDate = moment.tz(last_stream, format, tz);
+    last_stream = momentDate.utc().toDate();
   } catch (err) {
     console.error(err);
   }
@@ -295,20 +283,19 @@ exports.refreshAllFast = async function refreshAllFast () {
     })
   );
 
+  const stateValues = new Map();
+  stateValues.set(-1, false);
+  stateValues.set(1, true);
   for (let i = 0; i < data.length; i++) {
     const info = liveList[i].CHANNEL.BROAD_INFOS[0].list[0]; // stream data
-    const stateValues = new Map();
-    stateValues.set(-1, false);
-    stateValues.set(1, true);
     const isLive = stateValues.get(info.nState);
-
-    let last_stream = last_streamList[i].DATA.broad_start;
-    // console.log(last_stream);
     const nick = last_streamList[i].DATA.user_nick;
-    const bits = last_stream.split(/\D/);
-    last_stream = new Date(bits[0], --bits[1], bits[2], bits[3], bits[4]);
-    // console.log(last_stream);
-    // last_stream.setTime( last_stream.getTime() + last_stream.getTimezoneOffset()*460*1000 );
+    let last_stream = last_streamList[i].DATA.broad_start;
+    // Convert GMT+9 or Asia/Seoul AfreecaTV date to UTC
+    const format = 'YYYY-MM-DD hh:mm:ss';
+    const tz = 'Asia/Seoul';
+    const momentDate = moment.tz(last_stream, format, tz);
+    last_stream = momentDate.utc().toDate();
 
     data[i].is_live = isLive;
     data[i].last_live = last_stream;
