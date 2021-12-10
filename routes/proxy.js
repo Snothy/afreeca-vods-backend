@@ -1,10 +1,8 @@
 const Router = require('koa-router');
-const bodyparser = require('koa-bodyparser');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 const router = Router({ prefix: '/api' });
-
-router.get('/proxy/:url(.*)*', bodyparser(), proxyURL);
+router.get('/proxy/:url(.*)*', proxyURL);
 
 async function proxyURL (ctx) {
   const query = ctx.request.query;
