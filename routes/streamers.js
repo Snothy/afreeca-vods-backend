@@ -43,7 +43,6 @@ async function getById (ctx) {
 
 async function removeStreamer (ctx) {
   const id = ctx.params.id;
-  // console.log(id);
 
   const result = await modelStreamers.removeStreamer(id);
   if (result > 0) {

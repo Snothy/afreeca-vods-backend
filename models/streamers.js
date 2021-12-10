@@ -3,58 +3,49 @@ const modelVods = require('../models/vods');
 const request = require('request');
 const moment = require('moment-timezone');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
-// const fetch = require("node-fetch");
 const _this = this;
 
+/**
+ * Get data for a specific streamer
+ * @param {string} bj_id Streamer's unique ID. BJ stands for broadcast jockey
+ * @returns {Array<object>} A one element array. The element is an object containing all streamer data
+ */
 exports.getById = async function getById (bj_id) {
   const query = 'SELECT * FROM streamers WHERE id = $1;';
   const data = await db.run_query(query, [bj_id]);
-
   return data;
 };
 
-/*
-exports.getByUsername = async function getByUsername (bj_username) {
-    const query = 'SELECT * FROM streamers WHERE username = ?;';
-    const data = await db.run_query(query, bj_username);
-
-    return data;
-}
-
-exports.getIdByUsername = async function getIdByUsername (bj_username) {
-    const query = 'SELECT id FROM streamers WHERE username = ?;';
-    const data = await db.run_query(query,bj_username);
-
-    return data[0].id;
-}
-
-exports.getUsernameById = async function getUsernameById (bj_id) {
-    //inefficient implementation, since afreeca considers the username the ID
-    const query = 'SELECT username FROM streamers WHERE id = ?;';
-    const data = await db.run_query(query,bj_id);
-
-    return data[0].username;
-}
-*/
+/**
+ * Get data for all streamers in the database
+ * @returns {Array<object>} An array of n length. Each element represents a streamer object, containing that streamers data
+ */
 exports.getAll = async function getAll () {
   const query = 'SELECT * FROM streamers ORDER BY id ASC;';
   const data = await db.run_query(query);
   return data;
 };
 
+/**
+ * Update details for a specific streamer in the database
+ * @param {object} bj A streamer object with any updated properties
+ * @returns {number} Number representing rows affected.
+ */
 exports.updateStreamer = async function updateStreamer (bj) {
-  // console.log(bj);
-  // ${nick}, ${avatar_url}, ${is_live}, ${last_live}
   const query = 'UPDATE streamers SET nick = ${nick}, avatar_url = ${avatar_url}, is_live = ${is_live}, last_live = ${last_live}  WHERE ID = ${id} RETURNING nick;';
   const data = await db.run_query_insert(query, bj);
   return data;
 };
 
+/**
+ * Get the latest avatar, stream date & nickname information for a specific streamer
+ * @param {string} bj_id Streamer's unique ID.
+ * @returns {object} Object containing latest avatar, stream date & nickname
+ */
 exports.getData = async function getData (bj_id) {
   // get avatar and last_stream data
   let res, body, avatar, last_stream, nick;
   const avatarUrl = `https://bjapi.afreecatv.com/api/${bj_id}/station`;
-  // console.log(avatarUrl);
   const lastStreamUrl = `https://st.afreecatv.com/api/get_station_status.php?szBjId=${bj_id}`;
 
   try {
@@ -89,11 +80,15 @@ exports.getData = async function getData (bj_id) {
   return { avatar: avatar, last_live: last_stream, nick: nick };
 };
 
+/**
+ * Get the Live (is streaming) status for a specific streamer.
+ * @param {string} bj_id Streamer's unique ID.
+ * @returns {boolean} Whether the streamer is currently Live or not.
+ */
 exports.isLive = async function isLive (bj_id) {
   let res, body, info;
   const liveApiUrl = 'http://live.afreeca.com/api/get_broad_state_list.php?uid=';
   try {
-    // console.log(liveApiUrl+bj_id);
     res = await fetch((liveApiUrl + bj_id), {
       method: 'GET',
       headers: {
@@ -111,6 +106,14 @@ exports.isLive = async function isLive (bj_id) {
   }
 };
 
+/**
+ * Fetch all necessary information to launch a livestream & connect to the streams chat.
+ * @param {string} bj_id Streamer's unique ID.
+ * @param {string} cookie Cookie in order to authenticate with some services when obtaining the information.
+ * Some streams require a login to be viewed.
+ * @returns {object} All information necessary to launch the livestream and establish a connection to
+ * the chat through websockets.
+ */
 exports.getLive = async function getLive (bj_id, cookie) {
   let BNO, TITLE, AID, LIVEURL, CODE, CHAT, AUTH, FTK, CHATNO;//, PLAYLIST;
   let url = `https://live.afreecatv.com/afreeca/player_live_api.php?bjid=${bj_id}`;
@@ -142,7 +145,6 @@ exports.getLive = async function getLive (bj_id, cookie) {
     } else {
       AUTH = '';
     }
-    // console.log(body);
     const port = parseInt(body.CHANNEL.CHPT) + 1;
     CHAT = 'wss://' + body.CHANNEL.CHDOMAIN + ':' + port + `/Websocket/${bj_id}`;
   } catch (err) {
@@ -172,7 +174,6 @@ exports.getLive = async function getLive (bj_id, cookie) {
     });
     const body = await res.json();
     AID = body.CHANNEL.AID;
-    // console.log(info);
   } catch (err) {
     console.error(err);
   }
@@ -181,7 +182,8 @@ exports.getLive = async function getLive (bj_id, cookie) {
     return { live_url: '', title: TITLE, code: CODE };
   }
   // Get the server url in which the playlist is stored
-  url = `https://livestream-manager.afreecatv.com/broad_stream_assign.html?return_type=gcp_cdn&broad_key=${BNO}-common-original-hls&use_cors=true&cors_origin_url=play.afreecatv.com`;
+  url = `https://livestream-manager.afreecatv.com/broad_stream_assign.html?return_type=gcp_cdn&broad_key=
+  ${BNO}-common-original-hls&use_cors=true&cors_origin_url=play.afreecatv.com`;
   try {
     const res = await fetch(url, {
       method: 'GET',
@@ -191,14 +193,12 @@ exports.getLive = async function getLive (bj_id, cookie) {
     });
     const body = await res.json();
     LIVEURL = body.view_url;
-    // console.log(info);
   } catch (err) {
     console.error(err);
   }
   const result = LIVEURL + '?aid=' + AID;
   // Fetch 3 times to avoid the "pre_loading" segments, which seem to prevent
   // the player from loading further .TS (video) segments
-
   for (let i = 0; i < 3; i++) {
     try {
       await fetch(result, {
@@ -214,6 +214,12 @@ exports.getLive = async function getLive (bj_id, cookie) {
   return { live_url: result, title: TITLE, bno: BNO, code: CODE, chat: CHAT, auth: AUTH, ftk: FTK, chatno: CHATNO };//, playlist: PLAYLIST};
 };
 
+/**
+ * Get all Live streamers for a specific page. Each page can contain
+ * up to 60 streams. Sorted by viewcount.
+ * @param {number} page Which page to fetch
+ * @returns {Array<object>} Array containing all streams & their corresponding data
+ */
 exports.getBrowse = async function getBrowse (page) {
   let result;
   const url = `https://live.afreecatv.com/api/main_broad_list_api.php?selectType=action&selectValue=all&orderType=view_cnt&pageNo=${page}&lang=en_US`;
@@ -232,6 +238,17 @@ exports.getBrowse = async function getBrowse (page) {
   return result;
 };
 
+/**
+ * Update properties for all streamers in the database
+ * @returns {object} The streamers property contains all streamers with their updated data.
+ *
+ * Streamers who are currently Live have additional data appended to their object.
+ *
+ * The fetching property is a list of all streamers & whether there's a fetch active for them.
+ * A fetch being active means the program is listening for a new vods to add to the db. For
+ * example if the streamer is live and you want the new vod to be added. This feature was
+ * added simply for fun & to learn how to handle long pending requests.
+ */
 exports.refreshAllFast = async function refreshAllFast () {
   // only updates whether theyre live
   const data = await _this.getAll();
@@ -315,36 +332,34 @@ exports.refreshAllFast = async function refreshAllFast () {
   return { streamers: data, fetching: fetching };
 };
 
+/**
+ * Add a new streamer to the database.
+ * @param {string} bj_id Streamer's unique ID.
+ * @returns {number} Number representing rows affected in the database.
+ */
 exports.addStreamer = async function addStreamer (bj_id) {
-  // bj object (data to add new bj)
-  // call getData for username
-
-  // fetch for avatar, recent stream, islive default = 0,
   const bjData = await _this.getData(bj_id); // avatar, last_live
   const bj = { id: bj_id, nick: bjData.nick, avatar_url: bjData.avatar, is_live: false, last_live: bjData.last_live };
-  // const bj = [bj_id, bjData.nick, bjData.avatar, false, bjData.last_live];
-
-  // need bj object
   const query = 'INSERT INTO streamers VALUES(${id}, ${nick}, ${avatar_url}, ${is_live}, ${last_live}) RETURNING id;';
   const data = await db.run_query_insert(query, bj);
-
-  // set fetching
   await _this.addFetching(bj_id);
 
   return data;
 };
 
+/**
+ * Remove a streamer from the database
+ * @param {string} bj_id Streamer's unique ID.
+ * @returns {number} Number representing rows affected in the database.
+ */
 exports.removeStreamer = async function (bj_id) {
-  // remove vods_data, remove vods, remove bj
   let query, data, title_num;
   data = await modelVods.getStreamerVods(bj_id);
   for (let i = 0; i < data.length; i++) {
     // remove vods_data
     title_num = data[i].title_num;
-    // console.log(title_num);
     query = 'DELETE FROM vods_data WHERE vod_title_num = $1;';
     await db.run_query(query, [title_num]);
-
     // remove vod
     query = 'DELETE FROM vods WHERE title_num = $1;';
     await db.run_query(query, [title_num]);
@@ -354,34 +369,59 @@ exports.removeStreamer = async function (bj_id) {
   // remove streamer
   query = 'DELETE FROM streamers WHERE id = $1';
   data = await db.run_query_remove(query, [bj_id]);
-
   return data;
 };
 
+/**
+ * Get a list of all streamers' fetch status.
+ * @returns {Array<object>} Each element is an object containing a streamer and their fetch status.
+ * Fetching is properly explained in the refreshAllFast method :D.
+ */
 exports.getAllFetching = async function getAllFetching () {
   const query = 'SELECT * FROM fetching ORDER BY bj_id ASC;';
   const data = await db.run_query(query);
   return data;
 };
 
+/**
+ * Get a specific streamer's fetch status
+ * @param {string} bj_id Streamer's unique ID.
+ * @returns an object containing a streamer and their fetch status.
+ * Fetching is properly explained in the refreshAllFast method :D
+ */
 exports.getFetching = async function getFetching (bj_id) {
   const query = 'SELECT * FROM fetching WHERE bj_id = $1;';
   const data = await db.run_query(query, [bj_id]);
   return data[0].fetching;
 };
 
+/**
+ * Insert a new streamer and their fetching status into the database
+ * @param {string} bj_id Streamer's unique ID.
+ * @returns {number} Number of rows affected by the query.
+ */
 exports.addFetching = async function addFetching (bj_id) {
   const query = 'INSERT INTO fetching VALUES($1, $2) RETURNING bj_id;';
   const data = await db.run_query_insert(query, [bj_id, false]);
   return data;
 };
 
+/**
+ * Remove a streamer and their fetching status from the database
+ * @param {string} bj_id Streamer's unique ID.
+ * @returns {number} Number of rows affected by the query
+ */
 exports.removeFetching = async function removeFetching (bj_id) {
   const query = 'DELETE FROM fetching WHERE bj_id = $1';
   const data = await db.run_query_remove(query, [bj_id]);
   return data;
 };
 
+/**
+ * Sets the fetching status of all streamers in the database to false.
+ *
+ * This method is used when starting the server.
+ */
 exports.initFetching = async function initFetching () {
   // when the api starts, set all fetching to false
   const streamers = await _this.getAll();
@@ -392,6 +432,12 @@ exports.initFetching = async function initFetching () {
   }
 };
 
+/**
+ * Update the fetching status of a specific streamer
+ * @param {string} bj_id Streamer's unique ID.
+ * @param {boolean} fetchingBool Boolean representing the fetching status
+ * @returns {number} Number of rows affected by the query
+ */
 exports.updateFetching = async function updateFetching (bj_id, fetchingBool) {
   const query = 'UPDATE fetching SET fetching=$1 WHERE bj_id=$2 RETURNING bj_id;';
   const values = [fetchingBool, bj_id];
@@ -399,6 +445,13 @@ exports.updateFetching = async function updateFetching (bj_id, fetchingBool) {
   return result;
 };
 
+/**
+ *  Use login credentials to authenticate with AfreecaTV.
+ * @param {*} username Username
+ * @param {*} password Password
+ * @returns {object} The entire response object from the fetch. This contains information such as
+ * whether the login was successful & the cookies that come with a successful authentication.
+ */
 exports.login = async function (username, password) {
   const options = {
     method: 'POST',
