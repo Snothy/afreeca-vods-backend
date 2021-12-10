@@ -8,6 +8,12 @@ const _this = this;
 
 // translate vod title before adding to db
 
+/**
+ * Save a vod object to the database.
+ * @param {object} vod An object containing information about the vod.
+ * @param {Array<string>} vodData An array of m3u8 playlists that make up the conents of the vod.
+ * @returns {number} Number of affected rows in the database.
+ */
 exports.saveVod = async function saveVod (vod, vodData) {
   let query;
   query = 'INSERT INTO vods VALUES(${title_num}, ${bj_id}, ${thumbnail}, ${date_released}, ${title}, ${station_num}, ${bbs_num}, ${views}, ${duration}) RETURNING title_num;';
@@ -22,6 +28,11 @@ exports.saveVod = async function saveVod (vod, vodData) {
   return data1;
 };
 
+/**
+ * Get all m3u8 playlists that make up the content of a specific vod.
+ * @param {number} vod_title_num A vods unique identifier.
+ * @returns {Array<string>} An array of m3u8 playlists that make up the conents of the vod.
+ */
 exports.getVodData = async function getVodData (vod_title_num) {
   const query = 'SELECT * FROM vods_data WHERE vod_title_num = $1;';
   const data = await db.run_query(query, [vod_title_num]);
@@ -29,6 +40,11 @@ exports.getVodData = async function getVodData (vod_title_num) {
   return data;
 };
 
+/**
+ * Remove a vod and its associated playlist data from the database.
+ * @param {number} vod_title_num A vods unique identifier.
+ * @returns {number} Rows affected in the database.
+ */
 exports.removeVod = async function removeVod (vod_title_num) {
   let query;
   // remove vods_data
@@ -41,6 +57,11 @@ exports.removeVod = async function removeVod (vod_title_num) {
   return data;
 };
 
+/**
+ * Get all vods tied to a specific streamer.
+ * @param {string} bj_id A streamer's unique identifies
+ * @returns {Array<object>} An array containing all of their vods
+ */
 exports.getStreamerVods = async function getStreamerVods (bj_id) {
   const query = 'SELECT * FROM vods WHERE bj_id = $1;';
   const data = await db.run_query(query, [bj_id]);
@@ -48,6 +69,24 @@ exports.getStreamerVods = async function getStreamerVods (bj_id) {
   return data;
 };
 
+/**
+ * This method was developed mostly for testing & learning purposes.
+ *
+ * The response will take a long time.
+ *
+ * Only used for streamers who are currently Live.
+ *
+ * It works by listening for new vods by saving the ID of the last available VOD for
+ * a specific streamer and then making requests until a new vod is found.
+ *
+ * It will periodically check whether the streamer is still Live, and if no
+ * vod was found for whatever reason, the fetching will stop.
+ * @param {string} bj_id A streamers unique identifier.
+ * @param {string} cookie A cookie to identify the user making the request.
+ * The data for some vods can only be obtained if you are logged in.
+ * @returns {number} 1 on success and 0 on fail or error. The vod is saved
+ * to the database on success.
+ */
 exports.fetchNewVod = async function fetchNewVod (bj_id, cookie) {
   // set fetching to true
   await modelStreamers.updateFetching(bj_id, true);
@@ -84,7 +123,7 @@ exports.fetchNewVod = async function fetchNewVod (bj_id, cookie) {
     // Compare the two title_nums, if they differ, a new vod has been found
     if (lastVodTitle !== currLastVodTitle) {
       newVod = true;
-      _this.createVodObject(bj_id, [body.data[0]], cookie);
+      _this.createVodObject(bj_id, [body.data[0]], cookie, true);
       modelStreamers.updateFetching(bj_id, false);
     } else {
       // Every 50 requests, perform some actions & checks
@@ -104,7 +143,17 @@ exports.fetchNewVod = async function fetchNewVod (bj_id, cookie) {
   return 1;
 };
 
-exports.fetchXVods = async function fetchXVods (bj_id, num_of_vods, cookie) {
+/**
+ * Fetch a number of vods for a specific streamer.
+ *
+ * This will only return vods that are not already saved in the database.
+ * @param {string} bj_id A streamers unique identifier
+ * @param {number} num_of_vods The number of vods you want to attempt to fetch
+ * @param {string} cookie A cookie to identify the user making the request.
+ * The data for some vods can only be obtained if you are logged in.
+ * @returns {Array<object>} An array of vod objects, which also contain all m3u8 playlist data.
+ */
+exports.fetchXVodsDb = async function fetchXVods (bj_id, num_of_vods, cookie) {
   const URL = `https://bjapi.afreecatv.com/api/${bj_id}/vods/all?page=1&per_page=${num_of_vods}&orderby=reg_date`;
   let res, body;
   try {
@@ -119,11 +168,49 @@ exports.fetchXVods = async function fetchXVods (bj_id, num_of_vods, cookie) {
   if (streamerVods.length > 0) body.data = body.data.filter(vod => streamerVods.filter(currVod => currVod.title_num === vod.title_no.toString()).length === 0);
   if (body.data.length === 0) return body.data;
 
-  const vods = _this.createVodObject(bj_id, body.data, cookie);
+  const vods = _this.createVodObject(bj_id, body.data, cookie, true);
   return vods;
 };
 
-exports.createVodObject = async function createVodObject (bj_id, vods, cookie) {
+/**
+ * Fetch a number of vods for a specific streamer.
+ * @param {string} bj_id A streamers unique identifier
+ * @param {number} num_of_vods The number of vods you want to attempt to fetch
+ * @param {string} cookie A cookie to identify the user making the request.
+ * The data for some vods can only be obtained if you are logged in.
+ * @returns {Array<object>} An array of vod objects, which also contain all m3u8 playlist data.
+ */
+exports.fetchXVods = async function fetchXVods (bj_id, num_of_vods, cookie) {
+  const URL = `https://bjapi.afreecatv.com/api/${bj_id}/vods/all?page=1&per_page=${num_of_vods}&orderby=reg_date`;
+  let res, body;
+  try {
+    res = await fetch(URL);
+    body = await res.json();
+  } catch (err) {
+    console.log(err);
+  }
+
+  if (body.data.length === 0) return body.data;
+
+  const vods = _this.createVodObject(bj_id, body.data, cookie, false);
+  return vods;
+};
+
+// Only fetches 'Replay' vods, so full vods, not clips.
+/**
+ * Given an array of vod objects, this method will retrieve their
+ * corresponding m3u8 playlist data.
+ *
+ * The playlist data is what makes up the content of the vod.
+ *
+ * @param {string} bj_id A streamers unique identifier.
+ * @param {Array<object>} vods An array of vod objects for which you want to fetch the playlist data.
+ * @param {string} cookie A cookie to identify the user making the request.
+ * The data for some vods can only be obtained if you are logged in.
+ * @param {boolean} addToDb Whether you want to add the vods & their playlist data to the database
+ * @returns {Array<object>} An array of vods, which contain their playlist data.
+ */
+exports.createVodObject = async function createVodObject (bj_id, vods, cookie, addToDb) {
   const result = await Promise.all(
     vods.filter(vod => vod.display.bbs_name === 'Replay').map(vod => {
       return new Promise((resolve) => {
@@ -166,7 +253,10 @@ exports.createVodObject = async function createVodObject (bj_id, vods, cookie) {
                 bbs_num: vod.bbs_no,
                 title_num: vod.title_no
               };
-              _this.saveVod(vodObject, vodData);
+              if (addToDb) {
+                _this.saveVod(vodObject, vodData);
+              }
+              vodObject.playlistData = vodData;
               resolve(vodObject);
             });
           })

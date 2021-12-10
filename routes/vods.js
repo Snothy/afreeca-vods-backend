@@ -6,11 +6,12 @@ const modelVods = require('../models/vods');
 const router = Router({ prefix: '/api/streamers/:id([a-zA-Z0-9]{1,})' });
 
 router.get('/vods', getStreamerVods);
-router.post('/fetchVods', bodyparser(), fetchXVods);
 
 router.get('/:vodId([0-9]{1,})', getVodData);
 router.post('/:vodId([0-9]{1,})', removeVod);
 
+router.post('/fetchVods', bodyparser(), fetchXVods);
+router.post('/fetchVodsDb', bodyparser(), fetchXVodsDb);
 router.post('/fetch', bodyparser(), fetchNewVod);
 router.post('/cancelFetch', bodyparser(), cancelFetch);
 
@@ -31,16 +32,38 @@ async function getStreamerVods (ctx) {
 
 async function fetchXVods (ctx) {
   const id = ctx.params.id;
+  if (ctx.request.body.num == null || ctx.request.body.cookie == null) {
+    return ctx.body = { success: false, message: 'Incorrect request form.' };
+  }
   const cookie = ctx.request.body.cookie;
-
-  const result = await modelVods.fetchXVods(id, 40, cookie);
-  // console.log(result);
+  const numOfVods = ctx.request.body.num;
+  const result = await modelVods.fetchXVods(id, numOfVods, cookie);
   if (result) {
     if (result.length) {
-      return ctx.body = result;
+      return ctx.body = { success: true, vods: result };
     } else {
-      return ctx.status = 404;
+      return ctx.body = { success: false, message: 'No vods found.' };
     }
+  }
+}
+
+async function fetchXVodsDb (ctx) {
+  const id = ctx.params.id;
+  // Check if the correct body has been provided
+  if (ctx.request.body.num == null || ctx.request.body.cookie == null) {
+    return ctx.body = { success: false, message: 'Incorrect request form.' };
+  }
+  const cookie = ctx.request.body.cookie;
+  const numOfVods = ctx.request.body.num;
+  const result = await modelVods.fetchXVodsDb(id, numOfVods, cookie);
+  if (result) {
+    if (result.length) {
+      return ctx.body = { success: true, vods: result };
+    } else {
+      return ctx.body = { sucess: false, message: 'No new vods found. Try logging in as some vods are only avilable for logged in users.' };
+    }
+  } else {
+    ctx.status = 404;
   }
 }
 
