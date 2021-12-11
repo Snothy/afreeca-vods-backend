@@ -53,7 +53,9 @@
           "description": "The streamer's unique identifier",
           "type": "string"
         }
-      }
+      },
+      "required" : ["bj_id"],
+      "additionalProperties" : false
     },
     "addedStreamer": {
       "$id": "#addedStreamer",
@@ -178,10 +180,12 @@
       "type": "object",
       "properties": {
         "page": {
-          "description": "The page from which the streams will be fetches",
+          "description": "The page from which the streams will be fetched",
           "type": "integer"
         }
-      }
+      },
+      "required" : ["page"],
+      "additionalProperties" : false
     },
     "gotBrowse": {
       "$id": "#gotBrowse",
@@ -204,7 +208,9 @@
           "description": "The user's password",
           "type": "string"
         }
-      }
+      },
+      "required" : ["username", "password"],
+      "additionalProperties" : false
     },
     "loggedIn": {
       "$id": "#loggedIn",
@@ -226,7 +232,7 @@
         }
       }
     },
-    "removeStreamer": {
+    "removedStreamer": {
       "$id": "#removedStreamer",
       "Title": "Removed streamer",
       "description": "Data returned after removing a streamer",
@@ -248,7 +254,9 @@
           "description": "Cookie used to authenticate with afreeca's api. Not mandatory to fill this in, it can be empty. Some stream may not return the data you need if not provided.",
           "type": "string"
         }
-      }
+      },
+      "required" : ["cookie"],
+      "additionalProperties" : false
     },
     "gotLive": {
       "$id": "#gotLive",
@@ -256,8 +264,8 @@
       "description": "Data returned from the get livestream data route",
       "type": "object",
       "properties": {
-        "success": {
-          "description": "Whether the operation was successful",
+        "live": {
+          "description": "Whether the streamer is live",
           "type": "boolean"
         },
         "live_url": {

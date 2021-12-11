@@ -2,16 +2,18 @@ const Router = require('koa-router');
 const bodyparser = require('koa-bodyparser');
 const modelStreamers = require('../models/streamers');
 
+const { validateAddStreamer, validateLogin, validateGetBrowse, validateGetLive } = require('../controllers/validation');
+
 const router = Router({ prefix: '/api/streamers' });
 
 router.get('/', getAll);
-router.post('/', bodyparser(), addStreamer);
-router.post('/browse', bodyparser(), getBrowse);
-router.post('/login', bodyparser(), login);
+router.post('/', bodyparser(), validateAddStreamer, addStreamer);
+router.post('/browse', bodyparser(), validateGetBrowse, getBrowse);
+router.post('/login', bodyparser(), validateLogin, login);
 
 router.get('/:id([a-zA-Z0-9]{1,})', getById);
 router.del('/:id([a-zA-Z0-9]{1,})', removeStreamer);
-router.post('/:id([a-zA-Z0-9]{1,})/live', bodyparser(), getLive);
+router.post('/:id([a-zA-Z0-9]{1,})/live', bodyparser(), validateGetLive, getLive);
 
 router.get('/refresh/all/fast', refreshAllFast);
 

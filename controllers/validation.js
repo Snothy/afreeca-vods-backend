@@ -6,6 +6,11 @@
  */
 const { Validator, ValidationError } = require('jsonschema');
 
+const addStreamerSchema = require('../schemas/streamers.json').definitions.addStreamer;
+const getBrowseSchema = require('../schemas/streamers.json').definitions.getBrowse;
+const loginSchema = require('../schemas/streamers.json').definitions.login;
+const getLiveSchema = require('../schemas/streamers.json').definitions.getLive;
+
 /**
   * Wrapper function that returns a schema validator.
   * @param {object} schema - JSON schema definition
@@ -26,14 +31,12 @@ const validator = function (schema, resource) {
       */
   const handler = async function (ctx, next) {
     const body = ctx.request.body;
-    // console.log(body);
 
     try {
       v.validate(body, schema, validationOptions);
       await next();
     } catch (err) {
       if (err instanceof ValidationError) {
-        // console.log(err);
         ctx.status = 400;
         ctx.body = err;
       } else {
@@ -43,3 +46,8 @@ const validator = function (schema, resource) {
   };
   return handler;
 };
+
+exports.validateAddStreamer = validator(addStreamerSchema, 'streamer');
+exports.validateGetBrowse = validator(getBrowseSchema, 'streams');
+exports.validateLogin = validator(loginSchema, 'streamer');
+exports.validateGetLive = validator(getLiveSchema, 'streamer');

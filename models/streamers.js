@@ -142,7 +142,7 @@ exports.getLive = async function getLive (bj_id, cookie) {
       }
     });
     const body = await res.json();
-    if (body.CHANNEL.RESULT !== 1) return { success: false };
+    if (body.CHANNEL.RESULT !== 1) return { live: false };
     BNO = body.CHANNEL.BNO;
     TITLE = body.CHANNEL.TITLE;
     CODE = body.CHANNEL.RESULT;
@@ -187,7 +187,7 @@ exports.getLive = async function getLive (bj_id, cookie) {
   }
 
   if (CODE !== 1) {
-    return { success: false };
+    return { live: false };
   }
   // Get the server url in which the playlist is stored
   url = `https://livestream-manager.afreecatv.com/broad_stream_assign.html?return_type=gcp_cdn&broad_key=
@@ -220,7 +220,7 @@ exports.getLive = async function getLive (bj_id, cookie) {
     }
   }
 
-  return { success: true, live_url: result, title: TITLE, bno: BNO, chat: CHAT, auth: AUTH, ftk: FTK, chatno: CHATNO };//, playlist: PLAYLIST};
+  return { live: true, live_url: result, title: TITLE, bno: BNO, chat: CHAT, auth: AUTH, ftk: FTK, chatno: CHATNO };//, playlist: PLAYLIST};
 };
 
 /**
