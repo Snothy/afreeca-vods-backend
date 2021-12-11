@@ -1,3 +1,10 @@
+/**
+ * Module representing all functionalities to interact with the streamers table in the DB.
+ * @module models/streamers
+ * @author Petar Drumev
+ * @see routes/streamers for the route that requires these methods
+ */
+
 const db = require('../helpers/database');
 const modelVods = require('../models/vods');
 const request = require('request');
@@ -135,6 +142,7 @@ exports.getLive = async function getLive (bj_id, cookie) {
       }
     });
     const body = await res.json();
+    if (body.CHANNEL.RESULT !== 1) return { success: false };
     BNO = body.CHANNEL.BNO;
     TITLE = body.CHANNEL.TITLE;
     CODE = body.CHANNEL.RESULT;
@@ -179,7 +187,7 @@ exports.getLive = async function getLive (bj_id, cookie) {
   }
 
   if (CODE !== 1) {
-    return { live_url: '', title: TITLE, code: CODE };
+    return { success: false };
   }
   // Get the server url in which the playlist is stored
   url = `https://livestream-manager.afreecatv.com/broad_stream_assign.html?return_type=gcp_cdn&broad_key=
@@ -199,9 +207,10 @@ exports.getLive = async function getLive (bj_id, cookie) {
   const result = LIVEURL + '?aid=' + AID;
   // Fetch 3 times to avoid the "pre_loading" segments, which seem to prevent
   // the player from loading further .TS (video) segments
+  // not awaiting this is fine
   for (let i = 0; i < 3; i++) {
     try {
-      await fetch(result, {
+      fetch(result, {
         method: 'GET',
         headers: {
         }
@@ -211,7 +220,7 @@ exports.getLive = async function getLive (bj_id, cookie) {
     }
   }
 
-  return { live_url: result, title: TITLE, bno: BNO, code: CODE, chat: CHAT, auth: AUTH, ftk: FTK, chatno: CHATNO };//, playlist: PLAYLIST};
+  return { success: true, live_url: result, title: TITLE, bno: BNO, chat: CHAT, auth: AUTH, ftk: FTK, chatno: CHATNO };//, playlist: PLAYLIST};
 };
 
 /**
@@ -303,6 +312,7 @@ exports.refreshAllFast = async function refreshAllFast () {
   const stateValues = new Map();
   stateValues.set(-1, false);
   stateValues.set(1, true);
+  const fetching = await _this.getAllFetching();
   for (let i = 0; i < data.length; i++) {
     const info = liveList[i].CHANNEL.BROAD_INFOS[0].list[0]; // stream data
     const isLive = stateValues.get(info.nState);
@@ -317,6 +327,7 @@ exports.refreshAllFast = async function refreshAllFast () {
     data[i].is_live = isLive;
     data[i].last_live = last_stream;
     data[i].nick = nick;
+    data[i].fetching = fetching[i].fetching;
     _this.updateStreamer(data[i]);
 
     // get live information
@@ -327,9 +338,8 @@ exports.refreshAllFast = async function refreshAllFast () {
       data[i].views = info.nCurrentView;
     }
   }
-  const fetching = await _this.getAllFetching();
 
-  return { streamers: data, fetching: fetching };
+  return { streamers: data };
 };
 
 /**

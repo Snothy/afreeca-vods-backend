@@ -8,7 +8,6 @@ async function proxyURL (ctx) {
   const query = ctx.request.query;
   const base = ctx.params.url;
   let url;
-
   // Append all query parameters onto base URL if there are any
   if (Object.keys(query).length !== 0) {
     const props = Object.keys(query);
@@ -25,7 +24,7 @@ async function proxyURL (ctx) {
 
   try {
     const res = await fetch(url);
-    // ctx.type = 'html';
+    ctx.set('Content-Type', res.headers.get('content-type'));
     ctx.body = res.body;
   } catch (err) {
     ctx.status = 404;

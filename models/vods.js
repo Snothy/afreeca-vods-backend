@@ -1,5 +1,12 @@
+/**
+ * Module representing all functionalities to interact with the vods table in the DB.
+ * @module models/vods
+ * @author Petar Drumev
+ * @see routes/vods for the route that requires these methods
+ */
+
 const db = require('../helpers/database');
-const misc = require('./misc');
+const misc = require('../utils/misc');
 const modelStreamers = require('../models/streamers');
 const { DOMParser } = require('xmldom');
 

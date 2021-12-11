@@ -1,0 +1,358 @@
+{
+  "schema" : "http://json-schema.org/draft-04/schema#",
+  "definitions": {
+    "streamer": {
+      "$id": "#streamer",
+      "Title": "Streamer / BJ",
+      "description": "Data that makes up a streamer",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Unique identifier of the streamer",
+          "type": "string"
+        },
+        "nick": {
+          "description": "The nickname of the streamer",
+          "type": "string"
+        },
+        "avatar_url": {
+          "description": "URL of the streamer's avatar",
+          "type": "string"
+        },
+        "is_live": {
+          "description": "Whether the streamer is currently live",
+          "type": "boolean"
+        },
+        "last_live": {
+          "description": "The start date of the streamer's last stream",
+          "type": "string"
+        }
+      }
+    },
+    "viewStreamer": {
+      "$id": "#viewStreamer",
+      "Title": "Streamer / BJ",
+      "description": "Data that makes up a streamer",
+      "type": "object",
+      "properties": {"$ref": "#/definitions/streamer"}
+    },
+    "listStreamer": {
+      "$id": "#listStreamer",
+        "title": "Streamer List",
+        "description": "List of all streamers from the database",
+        "type": "array",
+        "items": {"$ref": "#/definitions/viewStreamer"}
+    },
+    "addStreamer": {
+      "$id": "#addStreamer",
+      "Title": "Add new streamer to favourites",
+      "description": "",
+      "type": "object",
+      "properties": {
+        "bj_id": {
+          "description": "The streamer's unique identifier",
+          "type": "string"
+        }
+      }
+    },
+    "addedStreamer": {
+      "$id": "#addedStreamer",
+      "Title": "Added a streamer",
+      "description": "Data returned from adding a streamer to the db",
+      "type": "object",
+      "properties": {
+        "created": {
+          "description": "Whether the streamer was added successfully",
+          "type": "boolean"
+        }
+      }
+    },
+    "streamData": {
+      "$id": "#streamData",
+      "Title": "Stream preview data",
+      "description": "All the data that makes up a stream previews",
+      "type": "object",
+      "properties": {
+        "broad_no": {
+          "description": "Unique identifier of the stream",
+          "type": "string"
+        },
+        "parent_broad_no": {
+          "description": "Number of parent broadcasts",
+          "type": "string"
+        },
+        "user_id": {
+          "description": "Unique identifier of the streamer",
+          "type": "string"
+        },
+        "user_nick": {
+          "description": "The streamer's nickname",
+          "type": "string"
+        },
+        "broad_title": {
+          "description": "The title of the stream",
+          "type": "string"
+        },
+        "broad_thumb": {
+          "description": "URL of the stream's thumbnail",
+          "type": "string"
+        },
+        "broad_start": {
+          "description": "The start date of the stream",
+          "type": "string"
+        },
+        "broad_grade": {
+          "description": "The grade of the stream",
+          "type": "string"
+        },
+        "broad_bps": {
+          "description": "The bits per second of the playback",
+          "type": "string"
+        },
+        "broad_resolution": {
+          "description": "The resolution of the playback",
+          "type": "string"
+        },
+        "visit_broad_type": {
+          "description": "",
+          "type": "string"
+        },
+        "broad_type": {
+          "description": "The broadcast type",
+          "type": "string"
+        },
+        "station_name": {
+          "description": "The name of the station",
+          "type": "string"
+        },
+        "broad_memo": {
+          "description": "",
+          "type": "string"
+        },
+        "current_view_cnt": {
+          "description": "",
+          "type": "string"
+        },
+        "m_current_view_cnt": {
+          "description": "",
+          "type": "string"
+        },
+        "allowed_view_cnt": {
+          "description": "The maximum amount of viewers the stream can have",
+          "type": "string"
+        },
+        "is_password": {
+          "description": "",
+          "type": "string"
+        },
+        "rank": {
+          "description": "",
+          "type": "string"
+        },
+        "broad_cate_no": {
+          "description": "The category number the stream is in",
+          "type": "string"
+        },
+        "total_view_cnt": {
+          "description": "The current viewers the stream has",
+          "type": "string"
+        },
+        "pc_view_cnt": {
+          "description": "Number of viewers watching on PC",
+          "type": "string"
+        },
+        "mobile_view_cnt": {
+          "description": "Number of mobile watchers",
+          "type": "string"
+        },
+        "is_drops": {
+          "description": "",
+          "type": "integer"
+        }
+      }
+    },
+    "getBrowse": {
+      "$id": "#getBrowse",
+      "Title": "Get top streams",
+      "description": "Get the top streams on AfreecaTV for a certain page",
+      "type": "object",
+      "properties": {
+        "page": {
+          "description": "The page from which the streams will be fetches",
+          "type": "integer"
+        }
+      }
+    },
+    "gotBrowse": {
+      "$id": "#gotBrowse",
+      "Title": "Got streams from browse",
+      "description": "The data returned from the get browse route ",
+      "type": "array",
+      "items": {"$ref": "#/definitions/streamData"}
+    },
+    "login": {
+      "$id": "#login",
+      "Title": "Log in",
+      "description": "Authenticating with Afreeca's API",
+      "type": "object",
+      "properties": {
+        "username": {
+          "description": "The user's username",
+          "type": "string"
+        },
+        "password": {
+          "description": "The user's password",
+          "type": "string"
+        }
+      }
+    },
+    "loggedIn": {
+      "$id": "#loggedIn",
+      "Title": "Logged in",
+      "description": "Data returned from the login",
+      "type": "object",
+      "properties": {
+        "login": {
+          "description": "Whether the login was successful",
+          "type": "boolean"
+        },
+        "cookie": {
+          "description": "The cookie returned from Afreeca's API",
+          "type": "array",
+          "items": {
+            "description": "Properties that make up the cookie",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "removeStreamer": {
+      "$id": "#removedStreamer",
+      "Title": "Removed streamer",
+      "description": "Data returned after removing a streamer",
+      "type": "object",
+      "properties": {
+        "removed": {
+          "description": "Whether the streamer was removed from the database",
+          "type": "boolean"
+        }
+      }
+    },
+    "getLive": {
+      "$id": "#getLive",
+      "Title": "Get livestream data",
+      "description": "All necessary data to establish a connection to the streamer's livestream & chat.",
+      "type": "object",
+      "properties": {
+        "cookie": {
+          "description": "Cookie used to authenticate with afreeca's api. Not mandatory to fill this in, it can be empty. Some stream may not return the data you need if not provided.",
+          "type": "string"
+        }
+      }
+    },
+    "gotLive": {
+      "$id": "#gotLive",
+      "Title": "Got livestream data",
+      "description": "Data returned from the get livestream data route",
+      "type": "object",
+      "properties": {
+        "success": {
+          "description": "Whether the operation was successful",
+          "type": "boolean"
+        },
+        "live_url": {
+          "description": "The m3u8 playlist for the livestream",
+          "type": "string"
+        },
+        "title": {
+          "description": "The title of the livestream",
+          "type": "string"
+        },
+        "bno": {
+          "description": "The streams unique identifier (broadcast number)",
+          "type": "string"
+        },
+        "chat": {
+          "description": "URL for establishing websocket connection with the chat",
+          "type": "string"
+        },
+        "auth": {
+          "description": "If the request was made with a cookie, this will represent an authentication for the chat, which allows the user to send messages. Otherwise empty string",
+          "type": "string"
+        },
+        "ftk": {
+          "description": "Unique identifier required for making a successful handhsake to connect to the chat",
+          "type": "string"
+        },
+        "chatno": {
+          "description": "Another unique identifier required for the handshake",
+          "type": "string"
+        }
+      }
+    },
+
+    "refreshedAllFast": {
+      "$id": "#refreshedAllFast",
+      "Title": "Refreshed streamers",
+      "description": "Data returned after streamer data was refreshed",
+      "type": "object",
+      "properties": {
+        "streamers": {
+          "description": "",
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {"$ref": "#/definitions/viewStreamer"},
+              {
+                "description": "If the streamer is live, extra data is returned",
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "description": "Unique identifier of the streamer",
+                    "type": "string"
+                  },
+                  "nick": {
+                    "description": "The nickname of the streamer",
+                    "type": "string"
+                  },
+                  "avatar_url": {
+                    "description": "URL of the streamer's avatar",
+                    "type": "string"
+                  },
+                  "is_live": {
+                    "description": "Whether the streamer is currently live",
+                    "type": "boolean"
+                  },
+                  "last_live": {
+                    "description": "The start date of the streamer's last stream",
+                    "type": "string"
+                  },
+                  "fetching": {
+                    "description": "Whether the server is fetching this streamer's latest vod",
+                    "type": "boolean"
+                  },
+                  "bno": {
+                    "description": "The streamers unique identifies (broadcast number)",
+                    "type": "string"
+                  },
+                  "title": {
+                    "description": "The streams title",
+                    "type": "string"
+                  },
+                  "streamImg": {
+                    "description": "URL for the stream's thumbnail",
+                    "type": "string"
+                  },
+                  "views": {
+                    "description": "Current viewer count",
+                    "type": "integer"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

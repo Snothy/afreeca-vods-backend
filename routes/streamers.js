@@ -60,6 +60,8 @@ async function addStreamer (ctx) {
   if (result) {
     ctx.status = 201;
     ctx.body = { created: true };
+  } else {
+    ctx.body = { created: false };
   }
 }
 
@@ -71,7 +73,7 @@ async function login (ctx) {
   // essentially "if login was successful"
   if (JSON.parse(response.body).RESULT === 1) {
     ctx.status = 200;
-    ctx.body = { login: true, headers: response.headers }; // response object .headers['set-cookies'] for list of all cookies
+    ctx.body = { login: true, cookie: response.headers['set-cookie'] };
   } else {
     ctx.body = { login: false };
   }

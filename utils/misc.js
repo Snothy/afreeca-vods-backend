@@ -1,4 +1,10 @@
 /**
+ * Module containing useful reusable functions
+ * @module utils/misc
+ * @author Petar Drumev
+ */
+
+/**
  * A Promise for a setTimeout.
  *
  * Its purpose is that it can be awaited
