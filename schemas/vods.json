@@ -1,0 +1,81 @@
+{
+  "schema" : "http://json-schema.org/draft-04/schema#",
+  "definitions": {
+    "vod": {
+      "$id": "#vod",
+      "Title": "Video",
+      "description": "Data that makes up a VOD",
+      "type": "object",
+      "properties": {
+        "title_num": {
+          "description": "Unique identifier of the VOD",
+          "type": "string"
+        },
+        "bj_id": {
+          "description": "The unique identifier of the streamer",
+          "type": "string"
+        },
+        "thumbnail": {
+          "description": "URL of the VOD's thumbnail",
+          "type": "string"
+        },
+        "date_released": {
+          "description": "The release date of the VOD",
+          "type": "string"
+        },
+        "title": {
+          "description": "The title of the VOD",
+          "type": "string"
+        },
+        "station_num": {
+          "description": "The station number of the VOD",
+          "type": "string"
+        },
+        "bbs_num": {
+          "description": "The bbs number of the VOD",
+          "type": "string"
+        },
+        "views": {
+          "description": "The number of views the VOD has",
+          "type": "integer"
+        },
+        "duration": {
+          "description": "The length of the VOD in milliseconds",
+          "type": "integer"
+        }
+      }
+    },
+    "viewVod": {
+      "$id": "#viewVod",
+      "Title": "Video",
+      "description": "Data that makes up a VOD",
+      "type": "object",
+      "properties": {"$ref": "#/definitions/vod"}
+    },
+    "listVod": {
+      "$id": "#listVod",
+      "title": "Vod List",
+      "description": "List of all VODs for a specific streamer from the database",
+      "type": "array",
+      "items": {"$ref": "#/definitions/viewVod"}
+    },
+    "getVodData": {
+
+    },
+    "gotVodData": {
+
+    },
+    "removedVod": {
+
+    },
+    "fetchXVods": {
+
+    },
+    "fetchedXVods": {
+
+    }
+    
+    
+    
+  }
+}

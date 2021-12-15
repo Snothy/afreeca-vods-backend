@@ -160,7 +160,9 @@ exports.fetchNewVod = async function fetchNewVod (bj_id, cookie) {
  * The data for some vods can only be obtained if you are logged in.
  * @returns {Array<object>} An array of vod objects, which also contain all m3u8 playlist data.
  */
-exports.fetchXVodsDb = async function fetchXVods (bj_id, num_of_vods, cookie) {
+exports.fetchXVodsDb = async function fetchXVodsDb (bj_id, num_of_vods, cookie) {
+  const user = await modelStreamers.getById(bj_id);
+  if (!user.length) return 0;
   const URL = `https://bjapi.afreecatv.com/api/${bj_id}/vods/all?page=1&per_page=${num_of_vods}&orderby=reg_date`;
   let res, body;
   try {
@@ -196,7 +198,6 @@ exports.fetchXVods = async function fetchXVods (bj_id, num_of_vods, cookie) {
   } catch (err) {
     console.log(err);
   }
-
   if (body.data.length === 0) return body.data;
 
   const vods = _this.createVodObject(bj_id, body.data, cookie, false);

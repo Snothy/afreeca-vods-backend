@@ -38,10 +38,10 @@
     },
     "listStreamer": {
       "$id": "#listStreamer",
-        "title": "Streamer List",
-        "description": "List of all streamers from the database",
-        "type": "array",
-        "items": {"$ref": "#/definitions/viewStreamer"}
+      "title": "Streamer List",
+      "description": "List of all streamers from the database",
+      "type": "array",
+      "items": {"$ref": "#/definitions/viewStreamer"}
     },
     "addStreamer": {
       "$id": "#addStreamer",

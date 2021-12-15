@@ -8,9 +8,9 @@ const router = Router({ prefix: '/api/streamers/:id([a-zA-Z0-9]{1,})' });
 router.get('/vods', getStreamerVods);
 
 router.get('/:vodId([0-9]{1,})', getVodData);
-router.post('/:vodId([0-9]{1,})', removeVod);
+router.del('/:vodId([0-9]{1,})', removeVod);
 
-router.post('/fetchVods', bodyparser(), fetchXVods);
+router.post('/fetchVods', bodyparser(), fetchXVods); // merge into one method?
 router.post('/fetchVodsDb', bodyparser(), fetchXVodsDb);
 router.post('/fetch', bodyparser(), fetchNewVod);
 router.post('/cancelFetch', bodyparser(), cancelFetch);
@@ -56,15 +56,9 @@ async function fetchXVodsDb (ctx) {
   const cookie = ctx.request.body.cookie;
   const numOfVods = ctx.request.body.num;
   const result = await modelVods.fetchXVodsDb(id, numOfVods, cookie);
-  if (result) {
-    if (result.length) {
-      return ctx.body = { success: true, vods: result };
-    } else {
-      return ctx.body = { sucess: false, message: 'No new vods found. Try logging in as some vods are only avilable for logged in users.' };
-    }
-  } else {
-    ctx.status = 404;
-  }
+  if (!result) return ctx.body = { success: false, message: 'Streamer not in database' };
+  if (!result.length) return ctx.body = { sucess: false, message: 'No new vods found. Try logging in as some vods are only avilable for logged in users.' };
+  return ctx.body = { success: true, vods: result };
 }
 
 async function getVodData (ctx) {

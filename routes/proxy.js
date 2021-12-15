@@ -1,5 +1,6 @@
 const Router = require('koa-router');
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+// const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const req = require('request');
 
 const router = Router({ prefix: '/api' });
 router.get('/proxy/:url(.*)*', proxyURL);
@@ -23,9 +24,11 @@ async function proxyURL (ctx) {
   }
 
   try {
-    const res = await fetch(url);
-    ctx.set('Content-Type', res.headers.get('content-type'));
-    ctx.body = res.body;
+    // const res = await fetch(url);
+    // ctx.set('Content-Type', res.headers.get('content-type'));
+    // ctx.body = res.body;
+    // ctx.redirect(url);
+    ctx.body = req(url);
   } catch (err) {
     ctx.status = 404;
   }
