@@ -1,15 +1,14 @@
-const info = require('../config');
+// const info = require('../config');
 const pgp = require('pg-promise')();
 
-const db = pgp(info.config);
-/*
+// const db = pgp(info.config);
+
 const db = pgp({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false
   }
 });
-*/
 
 exports.run_query = async function run_query (query, values) {
   let res;

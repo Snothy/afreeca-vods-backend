@@ -100,7 +100,7 @@ exports.fetchNewVod = async function fetchNewVod (bj_id, cookie) {
   const URL = `https://bjapi.afreecatv.com/api/${bj_id}/vods/all?page=1&per_page=2&orderby=reg_date`;
   let newVod = false;
   let counter = 0;
-  let lastVodTitle;
+  let lastVodTitle, vod;
 
   while (!newVod) {
     await misc.delay(1500); // Wait 1.5sec to not spam too many requests to the server
@@ -130,7 +130,7 @@ exports.fetchNewVod = async function fetchNewVod (bj_id, cookie) {
     // Compare the two title_nums, if they differ, a new vod has been found
     if (lastVodTitle !== currLastVodTitle) {
       newVod = true;
-      _this.createVodObject(bj_id, [body.data[0]], cookie, true);
+      vod = await _this.createVodObject(bj_id, [body.data[0]], cookie, true);
       modelStreamers.updateFetching(bj_id, false);
     } else {
       // Every 50 requests, perform some actions & checks
@@ -147,7 +147,7 @@ exports.fetchNewVod = async function fetchNewVod (bj_id, cookie) {
       counter++;
     }
   }
-  return 1;
+  return vod;
 };
 
 /**
@@ -189,7 +189,7 @@ exports.fetchXVodsDb = async function fetchXVodsDb (bj_id, num_of_vods, cookie) 
  * The data for some vods can only be obtained if you are logged in.
  * @returns {Array<object>} An array of vod objects, which also contain all m3u8 playlist data.
  */
-exports.fetchXVods = async function fetchXVods (bj_id, num_of_vods, cookie) {
+exports.fetchXVods = async function fetchXVods (bj_id, num_of_vods, cookie, addDb) {
   const URL = `https://bjapi.afreecatv.com/api/${bj_id}/vods/all?page=1&per_page=${num_of_vods}&orderby=reg_date`;
   let res, body;
   try {
@@ -199,8 +199,16 @@ exports.fetchXVods = async function fetchXVods (bj_id, num_of_vods, cookie) {
     console.log(err);
   }
   if (body.data.length === 0) return body.data;
+  if (addDb) {
+    const user = await modelStreamers.getById(bj_id);
+    if (!user.length) return 0;
+    // Filter vods that are already in the DB
+    const streamerVods = await _this.getStreamerVods(bj_id);
+    if (streamerVods.length > 0) body.data = body.data.filter(vod => streamerVods.filter(currVod => currVod.title_num === vod.title_no.toString()).length === 0);
+    if (body.data.length === 0) return body.data;
+  }
 
-  const vods = _this.createVodObject(bj_id, body.data, cookie, false);
+  const vods = _this.createVodObject(bj_id, body.data, cookie, addDb);
   return vods;
 };
 

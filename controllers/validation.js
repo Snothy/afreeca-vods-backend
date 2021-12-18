@@ -10,6 +10,8 @@ const addStreamerSchema = require('../schemas/streamers.json').definitions.addSt
 const getBrowseSchema = require('../schemas/streamers.json').definitions.getBrowse;
 const loginSchema = require('../schemas/streamers.json').definitions.login;
 const getLiveSchema = require('../schemas/streamers.json').definitions.getLive;
+const fetchVodsSchema = require('../schemas/vods.json').definitions.fetchVods;
+const fetchNewVodSchema = require('../schemas/vods.json').definitions.fetchNewVod;
 
 /**
   * Wrapper function that returns a schema validator.
@@ -51,3 +53,5 @@ exports.validateAddStreamer = validator(addStreamerSchema, 'streamer');
 exports.validateGetBrowse = validator(getBrowseSchema, 'streams');
 exports.validateLogin = validator(loginSchema, 'streamer');
 exports.validateGetLive = validator(getLiveSchema, 'streamer');
+exports.validateFetchVods = validator(fetchVodsSchema, 'vod');
+exports.validateFetchNewVod = validator(fetchNewVodSchema, 'vod');

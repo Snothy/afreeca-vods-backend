@@ -3,6 +3,8 @@ const bodyparser = require('koa-bodyparser');
 const modelStreamers = require('../models/streamers');
 const modelVods = require('../models/vods');
 
+const { validateFetchVods, validateFetchNewVod } = require('../controllers/validation');
+
 const router = Router({ prefix: '/api/streamers/:id([a-zA-Z0-9]{1,})' });
 
 router.get('/vods', getStreamerVods);
@@ -10,9 +12,9 @@ router.get('/vods', getStreamerVods);
 router.get('/:vodId([0-9]{1,})', getVodData);
 router.del('/:vodId([0-9]{1,})', removeVod);
 
-router.post('/fetchVods', bodyparser(), fetchXVods); // merge into one method?
-router.post('/fetchVodsDb', bodyparser(), fetchXVodsDb);
-router.post('/fetch', bodyparser(), fetchNewVod);
+router.post('/fetchVods', bodyparser(), validateFetchVods, fetchXVods);
+// router.post('/fetchVodsDb', bodyparser(), fetchXVodsDb); // merge into one method?
+router.post('/fetch', bodyparser(), validateFetchNewVod, fetchNewVod);
 router.post('/cancelFetch', bodyparser(), cancelFetch);
 
 async function getStreamerVods (ctx) {
@@ -32,21 +34,16 @@ async function getStreamerVods (ctx) {
 
 async function fetchXVods (ctx) {
   const id = ctx.params.id;
-  if (ctx.request.body.num == null || ctx.request.body.cookie == null) {
-    return ctx.body = { success: false, message: 'Incorrect request form.' };
-  }
   const cookie = ctx.request.body.cookie;
   const numOfVods = ctx.request.body.num;
-  const result = await modelVods.fetchXVods(id, numOfVods, cookie);
-  if (result) {
-    if (result.length) {
-      return ctx.body = { success: true, vods: result };
-    } else {
-      return ctx.body = { success: false, message: 'No vods found.' };
-    }
-  }
+  const addDb = ctx.request.body.addDb;
+  const result = await modelVods.fetchXVods(id, numOfVods, cookie, addDb);
+  if (!result) return ctx.body = { success: false, message: 'Streamer not in database' };
+  if (!result.length) return ctx.body = { sucess: false, message: 'No vods found. Try logging in as some vods are only avilable for logged in users.' };
+  return ctx.body = { success: true, vods: result };
 }
 
+/*
 async function fetchXVodsDb (ctx) {
   const id = ctx.params.id;
   // Check if the correct body has been provided
@@ -60,6 +57,7 @@ async function fetchXVodsDb (ctx) {
   if (!result.length) return ctx.body = { sucess: false, message: 'No new vods found. Try logging in as some vods are only avilable for logged in users.' };
   return ctx.body = { success: true, vods: result };
 }
+*/
 
 async function getVodData (ctx) {
   const vodId = ctx.params.vodId;
@@ -92,25 +90,18 @@ async function fetchNewVod (ctx) {
   const id = ctx.params.id;
   const cookie = ctx.request.body.cookie;
   const bj = await modelStreamers.getById(id);
-
-  // isFetching(bj_id)
-  // if true -> already fetching
-  // once fetch complete set back to false
-  // upon running of API set all to false
   const fetching = await modelStreamers.getFetching(id);
 
   // streamer live, not fetching => fetch allowed
   if (bj[0].is_live && !fetching) {
     const result = await modelVods.fetchNewVod(id, cookie);
-    // const result = 1;
-    if (result === 1) {
-      return ctx.body = { success: true, message: `Successfully fetched VOD for ${id}` };
-    } else if (result === 0) {
-      return ctx.body = { success: true, message: `Cancelled VOD fetch for ${id}` };
-    }
+    if (result === 0) return ctx.body = { success: true, message: `Cancelled VOD fetch for ${id}` };
+    return ctx.body = { success: true, message: `Successfully fetched VOD for ${id}`, vod: result };
+
     // streamer live, already fetching
   } else if (bj[0].is_live && fetching) {
     return ctx.body = { success: false, fetching: true, message: 'Already fetching' };
+
     // streamer not live (unable to fetch)
   } else {
     return ctx.body = { success: false, fetching: false, message: 'Streamer not live or inability to fetch' };

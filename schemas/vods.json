@@ -59,23 +59,169 @@
       "type": "array",
       "items": {"$ref": "#/definitions/viewVod"}
     },
-    "getVodData": {
-
+    "viewVodData": {
+      "$id": "#viewVodData",
+      "title": "Vod data item",
+      "description": "A URL to an m3u8 playlist. Each VOD might have 1 or more playlist segments.",
+      "type": "string"
     },
-    "gotVodData": {
-
+    "listVodData": {
+      "$id": "#listVodData",
+      "title": "Vod Data",
+      "description": "List of all VOD playlists (segments)",
+      "type": "array",
+      "items": {"$ref": "#/definitions/viewVodData"}
     },
     "removedVod": {
-
+      "$id": "#removedVod",
+      "Title": "Removed VOD",
+      "description": "Data returned from removing a VOD",
+      "type": "object",
+      "properties": {
+        "removed": {
+          "description": "Whether the vod was successfully removed",
+          "type": "boolean"
+        }
+      }
     },
-    "fetchXVods": {
-
+    "fetchVodsItem": {
+      "$id": "#fetchVodsItem",
+      "Title": "Fetch VODs item",
+      "description": "Data returned fetching vods",
+      "type": "object",
+      "properties": {
+        "views": {
+          "description": "The number of views the VOD has",
+          "type": "integer"
+        },
+        "title": {
+          "description": "The title of the VOD",
+          "type": "string"
+        },
+        "duration": {
+          "description": "The length of the VOD in milliseconds",
+          "type": "integer"
+        },
+        "date_released": {
+          "description": "The release date of the VOD",
+          "type": "string"
+        },
+        "thumbnail": {
+          "description": "URL of the VOD's thumbnail",
+          "type": "string"
+        },
+        "bj_id": {
+          "description": "The unique identifier of the streamer",
+          "type": "string"
+        },
+        "station_num": {
+          "description": "The station number of the VOD",
+          "type": "integer"
+        },
+        "bbs_num": {
+          "description": "The bbs number of the VOD",
+          "type": "integer"
+        },
+        "title_num": {
+          "description": "The title number of the VOD",
+          "type": "integer"
+        },
+        "playlistData": {
+          "description": "List of all VOD playlists (segments)",
+          "type": "array",
+          "items": {"$ref": "#/definitions/viewVodData"}
+        }
+      }
     },
-    "fetchedXVods": {
-
+    "fetchVods": {
+      "$id": "#fetchVods",
+      "Title": "Fetch streamer VODs",
+      "description": "Fetch all of the latest VODs for a specific streamer",
+      "type": "object",
+      "properties": {
+        "cookie": {
+          "description": "Cookie used to authenticate with afreeca's api. Not mandatory to fill this in, it can be empty. Some VODs may be inaccessible if not provided.",
+          "type": "string"
+        },
+        "num": {
+          "description": "The number of vods you watch to fetch",
+          "type": "integer"
+        },
+        "addDb": {
+          "description": "Whether the vods fetched should be added to the database. This will filter out any VODs that are already in the DB for that streamer.",
+          "type": "boolean"
+        }
+      },
+      "required" : ["cookie", "num", "addDb"],
+      "additionalProperties" : false
+    },
+    "fetchedVods": {
+      "$id": "#fetchedVods",
+      "Title": "Fetched VODs",
+      "description": "Returns all of the latest VODs for a specific streamer",
+      "type": "object",
+      "properties": {
+        "success": {
+          "description": "Whether the fetch was successful",
+          "type": "boolean"
+        },
+        "vods": {
+          "description": "An array of all vods fetched and their data",
+          "type": "array",
+          "items": {"$ref": "#/definitions/fetchVodsItem"}
+        }
+      }
+    },
+    "fetchNewVod": {
+      "$id": "#fetchNewVod",
+      "Title": "Fetch new VOD",
+      "description": "Fetches the latest VODs for a specific streamer",
+      "type": "object",
+      "properties": {
+        "cookie": {
+          "description":"Cookie used to authenticate with afreeca's api. Not mandatory to fill this in, it can be empty. Some VODs may be inaccessible if not provided.",
+          "type": "string"
+        }
+      },
+      "required" : ["cookie"],
+      "additionalProperties" : false
+    },
+    "fetchedNewVod": {
+      "$id": "#fetchedNewVod",
+      "Title": "Fetched new VOD",
+      "description": "Returns the latest VODs for a specific streamer",
+      "type": "object",
+      "properties": {
+        "success": {
+          "description": "Whether the fetch was successful",
+          "type": "boolean"
+        },
+        "message": {
+          "description": "Additional information about the fetch result",
+          "type": "string"
+        },
+        "vod": {
+          "description": "All the VOD data",
+          "type": "object",
+          "properties": {"$ref": "#/definitions/fetchVodsItem"}
+        }
+      }
+    },
+    "cancelledFetch": {
+      "$id": "#cancelledFetch",
+      "Title": "Cancelled fetch",
+      "description": "Returns whether the fetching of a new VOD was cancelled successfully.",
+      "type": "object",
+      "properties": {
+        "success": {
+          "description": "Whether the fetch was successful",
+          "type": "boolean"
+        },
+        "message": {
+          "description": "Additional information about the fetch result",
+          "type": "string"
+        }
+      }
     }
-    
-    
-    
   }
 }

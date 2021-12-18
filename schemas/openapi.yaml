@@ -1,0 +1,79 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Lightweight AfreecaTV client
+  description: A web application for viewing AfreecaTV streamer VODs and streams.
+  contact:
+    name: Petar Drumev
+    email: peter.drumev98@gmail.com
+  license: 
+    name: Apache 2.0,
+    url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
+servers:
+  - url: 'https://afreeca-backend.herokuapp.com/api/'
+    description: Development server
+tags:
+  - name: Streamers
+    description: API endpoints for streamers
+  - name: Vods
+    description: Perform CRUD operations on vods
+
+
+paths:
+
+  /streamers:
+    summary: Represents a streamer
+
+    get:
+      tags: 
+      - Streamers
+      description: Returns list of all streamers.
+      responses: 
+        '200': 
+          description: Streamers obtained
+          content:
+            application/json:
+              schema:
+                $ref: ./streamers.json#/definitions/listStreamer
+        '404':
+          description: No streamers found
+
+
+
+  /streamers/{id}:
+    summary: Represents an individual streamer.
+    parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: ID of the user.
+      
+    get:
+      tags: 
+      - Streamers
+      description: Returns a single streamer.
+      responses:
+        '200':
+          description: Streamer obtained
+          content:
+            application/json:
+              schema:
+                $ref: ./user.json#/definitions/viewStreamer
+        '404':
+          description: Not found
+
+    delete:
+      tags: 
+      - Streamers
+      description: Delete a streamer record
+      responses:
+        '200':
+          description: Streamer deleted
+          content:
+            application/json:
+              schema:
+                $ref: ./user.json#/definitions/removedStreamer
+        '404':
+          description: Not found
