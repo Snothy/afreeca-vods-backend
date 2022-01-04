@@ -27,7 +27,7 @@ paths:
     get:
       tags: 
       - Streamers
-      description: Returns list of all streamers.
+      description: Get all streamers
       responses: 
         '200': 
           description: Streamers obtained
@@ -37,8 +37,73 @@ paths:
                 $ref: ./streamers.json#/definitions/listStreamer
         '404':
           description: No streamers found
+    post:
+      tags:
+      - Streamers
+      description: Add streamer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./streamers.json#/definitions/addStreamer
+      responses:
+        '200':
+          description: Streamer added
+          content:
+            application/json:
+              schema:
+                $ref: ./streamers.json#/definitions/addedStreamer
+        '400':
+          description: Failed to add streamer
+          content:
+            application/json:
+              schema:
+                $ref: ./streamers.json#/definitions/addedStreamer
 
-
+  /streamers/browse:
+    summary: Top livestreams
+    post:
+      tags:
+      - Streamers
+      description: Get top livestreams
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./streamers.json#/definitions/getBrowse
+      responses:
+        '200':
+          description: Received list of streams
+          content:
+            application/json:
+              schema:
+                $ref: ./streamers.json#/definitions/gotBrowse
+        '404':
+          description: None found.
+    
+  /streamers/login:
+    summary: Log into Afreeca
+    post:
+      tags:
+      - Streamers
+      description: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./streamers.json#/definitions/login
+      responses:
+        '200':
+          description: Received token
+          content:
+            application/json:
+              schema:
+                $ref: ./streamers.json#/definitions/loggedIn
+        '404':
+          description: None found.
 
   /streamers/{id}:
     summary: Represents an individual streamer.
@@ -53,27 +118,164 @@ paths:
     get:
       tags: 
       - Streamers
-      description: Returns a single streamer.
+      description: Get streamer
       responses:
         '200':
           description: Streamer obtained
           content:
             application/json:
               schema:
-                $ref: ./user.json#/definitions/viewStreamer
+                $ref: ./streamers.json#/definitions/viewStreamer
         '404':
           description: Not found
 
     delete:
       tags: 
       - Streamers
-      description: Delete a streamer record
+      description: Remove streamer
       responses:
         '200':
           description: Streamer deleted
           content:
             application/json:
               schema:
-                $ref: ./user.json#/definitions/removedStreamer
+                $ref: ./streamers.json#/definitions/removedStreamer
         '404':
           description: Not found
+
+  /streamers/{id}/live:
+    summary: The streamers' livestream
+    parameters: 
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: ID of the user.
+    post:
+      tags:
+      - Streamers
+      description: Get livestream data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./streamers.json#/definitions/getLive
+      responses:
+        '200':
+          description: Livestream data received
+          content:
+            application/json:
+              schema:
+                $ref: ./streamers.json#/definitions/gotLive
+        '404':
+          description: Not found
+
+  /streamers/refresh/all/fast:
+    summary: Update streamer data
+    get:
+      tags:
+      - Streamers
+      description: Get latest streamer data
+      responses:
+        '200':
+          description: Streamer data updated
+          content:
+            application/json:
+              schema:
+                $ref: ./streamers.json#/definitions/refreshedAllFast
+        '404':
+          description: Not found
+
+  /streamers/{id}/vods:
+    summary: Streamer vods
+    parameters: 
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: ID of the user.
+    get:
+      tags:
+      - Vods 
+      description: Get all streamer Vods
+      responses:
+        '200':
+          description: Vods received
+          content:
+            application/json:
+              schema:
+                $ref: ./vods.json#/definitions/listVod
+        '404':
+          description: None found
+  
+  /streamers/{id}/{vodId}:
+    summary: Specific Vod
+    parameters: 
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: ID of the user.
+      - in: path
+        name: vodId
+        schema:
+          type: string
+        required: true
+        description: ID of the Vod.
+    get:
+      tags:
+      - Vods
+      description: Get Vod
+      responses:
+        '200':
+          description: Vod data received
+          content:
+            application/json:
+              schema:
+                $ref: ./vods.json#/definitions/viewVod
+        '404':
+          description: None found
+    delete:
+      tags:
+      - Vods
+      description: Remove Vod
+      responses:
+        '200':
+          description: Vod removed
+          content:
+            application/json:
+              schema:
+                $ref: ./vods.json#/definitions/removedVod
+        '400':
+          description: None found
+
+  /streamers/{id}/fetchVods:
+    parameters: 
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+        description: ID of the user.
+    summary: Fetch streamer vods from Afreeca's API
+    post:
+      tags:
+      - Vods
+      description: Fetch streamer vods from Afreeca's API
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./vods.json#/definitions/fetchVods
+      responses:
+        '200':
+          description: Vods received
+          content:
+            application/json:
+              schema:
+                $ref: ./vods.json#/definitions/fetchedVods

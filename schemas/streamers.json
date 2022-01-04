@@ -41,7 +41,7 @@
       "title": "Streamer List",
       "description": "List of all streamers from the database",
       "type": "array",
-      "items": {"$ref": "#/definitions/viewStreamer"}
+      "items": {"$ref": "#/definitions/streamer"}
     },
     "addStreamer": {
       "$id": "#addStreamer",
@@ -310,7 +310,7 @@
           "type": "array",
           "items": {
             "oneOf": [
-              {"$ref": "#/definitions/viewStreamer"},
+              {"$ref": "#/definitions/streamer"},
               {
                 "description": "If the streamer is live, extra data is returned",
                 "type": "object",

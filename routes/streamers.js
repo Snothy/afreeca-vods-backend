@@ -88,6 +88,8 @@ async function getLive (ctx) {
   const result = await modelStreamers.getLive(id, cookie);
   if (result) {
     return ctx.body = result;
+  } else {
+    return ctx.status = 404;
   }
 }
 
