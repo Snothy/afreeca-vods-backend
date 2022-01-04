@@ -12,16 +12,8 @@
         }
     </style>
 </head>
-    <body>
-        <div id=”openapi”>
-            <script src=”//pagecdn.io/lib/swagger-ui/v3.31.1/swagger-ui-bundle.js”></script>
-            <script>
-            window.onload = function () {
-              const ui = SwaggerUIBundle({
-                url: './schemas/openapi.yaml',
-                dom_id: '#openapi'
-              })
-            }
-            </script>
-    </body>
+<body>
+    <redoc spec-url='./schemas/openapi.yaml'></redoc>
+    <script src="https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"> </script>
+</body>
 </html>
