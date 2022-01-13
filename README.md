@@ -8,7 +8,7 @@ It is essentially equivalent to your favourite streamers section on Afreeca, but
 instantaneously, with new data being dynamically fetched and appended. </br>
 Read the future work section if you're interested in the development of this project / projects related to it & check out the Findings section for issues/security flaws that I've reported to Afreeca. </br>
 A live preview of this project is available at: https://afreeca-vods-frontend.vercel.app/. 
-First launch will take a little while (backend is hosted on heroku & the web dyno needs to wake up).
+It is NOT yet optimized for mobile. First launch will take a little while (backend is hosted on heroku & the web dyno needs to wake up).
 
 ## Features
 - Fully documented using JSDocs & OpenAPI spec, available for live preview in `./docs/`.
