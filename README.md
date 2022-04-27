@@ -12,7 +12,7 @@ It is NOT yet optimized for mobile. First launch will take a little while (backe
 
 ## Features
 - Fully documented using JSDocs & OpenAPI spec, available for live preview in `./docs/`.
-The OpenAPI docs are also available on : https://snothy.github.io/afreeca-vods-backend/
+The OpenAPI docs are also available on : https://snothy.github.io/afreeca-vods-backend/ (turned off due to people using it to collect weird vods)
 - Browse current top livestreams
 - A favourite streamers list, from which you can add & remove streamers
 - A list of all available Vods for each streamer added to the favourite list
